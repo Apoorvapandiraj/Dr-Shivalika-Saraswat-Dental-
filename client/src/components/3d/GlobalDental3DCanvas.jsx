@@ -60,6 +60,9 @@ function GradientFallback() {
 
 export default function GlobalDental3DCanvas() {
   const hasWebGL = useWebGL();
+  const prefersReducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+  const isSmallScreen = window.matchMedia?.('(max-width: 767px)').matches;
+  const use3D = hasWebGL && !prefersReducedMotion && !isSmallScreen;
 
   return (
     <div
@@ -75,12 +78,12 @@ export default function GlobalDental3DCanvas() {
       <div className="absolute left-[22%] bottom-[10%] h-[24rem] w-[24rem] rounded-full bg-[#f3b7a7]/12 blur-[110px]" />
       <div className="absolute right-[12%] bottom-[8%] h-[20rem] w-[20rem] rounded-full bg-[#F7D6CB]/12 blur-[110px]" />
 
-      {hasWebGL ? (
+      {use3D ? (
         <CanvasErrorBoundary>
           <Suspense fallback={<GradientFallback />}>
             <Canvas
               camera={{ position: [0.3, 0.4, 9.2], fov: 30 }}
-              dpr={[1, 1.75]}
+              dpr={[1, 1.25]}
               gl={{
                 antialias: true,
                 alpha: true,

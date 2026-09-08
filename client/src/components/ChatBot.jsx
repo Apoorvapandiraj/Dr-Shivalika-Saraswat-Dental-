@@ -36,12 +36,13 @@ export default function ChatBot() {
   };
 
   useEffect(() => {
+    if (!open) return undefined;
     api.get('/profile').then(({ data }) => setProfile(data.data)).catch(() => {});
     const t = setTimeout(() => {
       addMsg('bot', "Hi! 👋 Welcome to Dr. Shivalika Saraswat's dental clinic.\nI'm Mira, your care assistant — I can share treatment prices, working hours and help you book an appointment in under a minute.\n\nMay I have your name, please? 😊");
     }, 700);
     return () => clearTimeout(t);
-  }, []);
+  }, [open]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
