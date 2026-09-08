@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const RENDER_API_URL = 'https://dr-shivalika-saraswat-dental-1.onrender.com/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || (import.meta.env.PROD ? RENDER_API_URL : '/api');
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL: API_BASE_URL,
   timeout: 15000,
 });
 
@@ -24,7 +27,7 @@ api.interceptors.response.use(
       try {
         if (!refreshPromise) {
           refreshPromise = axios
-            .post('/api/auth/refresh', { refreshToken: localStorage.getItem('refreshToken') })
+            .post(`${API_BASE_URL}/auth/refresh`, { refreshToken: localStorage.getItem('refreshToken') })
             .finally(() => { refreshPromise = null; });
         }
         const { data } = await refreshPromise;
