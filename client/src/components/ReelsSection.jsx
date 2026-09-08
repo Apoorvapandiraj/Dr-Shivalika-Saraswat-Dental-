@@ -10,7 +10,7 @@ import { ReelModal, ReviewModal } from './ReelsModals.jsx';
 const MAX_REEL_SECONDS = 60;
 const MAX_REEL_BYTES = 50 * 1024 * 1024; // matches server cap
 
-// API origin for absolute video URLs (baseURL is http://localhost:5050/api)
+// API origin for video URLs returned relative to the backend host
 const MEDIA_ORIGIN = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
 const mediaUrl = (u) => (u?.startsWith('http') ? u : `${MEDIA_ORIGIN}${u}`);
 
@@ -244,4 +244,3 @@ export default function ReelsSection({ profile }) {
     </section>
   );
 }
-
