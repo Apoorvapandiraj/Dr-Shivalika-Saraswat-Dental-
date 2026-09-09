@@ -9,13 +9,14 @@ const crypto = require('crypto');
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const CONTENT_DIR = path.join(__dirname, '..', 'uploads', 'content');
 
-const saveImageFile = (file) => {
+const saveImageFile = (file, req) => {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
   const ext = file.mimetype.includes('png') ? 'png' : file.mimetype.includes('webp') ? 'webp' : 'jpg';
   const filename = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const filepath = path.join(CONTENT_DIR, filename);
   fs.writeFileSync(filepath, file.buffer);
-  return { url: `/uploads/content/${filename}`, publicId: filename };
+  const origin = `${req.protocol}://${req.get('host')}`;
+  return { url: `${origin}/uploads/content/${filename}`, publicId: filename };
 };
 
 exports.getContentDashboard = asyncHandler(async (req, res) => {
@@ -66,7 +67,7 @@ exports.uploadContentImage = asyncHandler(async (req, res) => {
   if (!file) throw new AppError('Image file is required', 400);
   if (!IMAGE_TYPES.includes(file.mimetype)) throw new AppError('Only JPG, PNG and WEBP images are allowed', 400);
 
-  const image = saveImageFile(file);
+  const image = saveImageFile(file, req);
   res.status(201).json({ success: true, message: 'Image uploaded', data: image });
 });
 
