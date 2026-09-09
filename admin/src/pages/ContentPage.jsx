@@ -13,6 +13,9 @@ const emptyCaseStudy = () => ({
   isApproved: true,
 });
 
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
+const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
+
 export default function ContentPage() {
   const [profile, setProfile] = useState(null);
   const [caseStudies, setCaseStudies] = useState([]);
@@ -347,7 +350,7 @@ export default function ContentPage() {
 
         {profile.profileImage?.url && (
           <div className="mt-5 overflow-hidden rounded-2xl border border-[#F1D9D0] bg-[#FFF7F4] p-3">
-            <img src={profile.profileImage.url} alt="Profile preview" className="h-40 w-full rounded-xl object-cover" />
+                    <img src={mediaUrl(profile.profileImage.url)} alt="Profile preview" className="h-40 w-full rounded-xl object-cover" />
           </div>
         )}
       </div>
@@ -370,7 +373,7 @@ export default function ContentPage() {
                 <label className="field-label">Card image</label>
                 <div className="flex flex-wrap items-center gap-4">
                   {service.image?.url ? (
-                    <img src={service.image.url} alt={service.name || 'Service'} className="h-20 w-32 rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
+                    <img src={mediaUrl(service.image.url)} alt={service.name || 'Service'} className="h-20 w-32 rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
                   ) : (
                     <span className="text-xs text-[#6E6D7A]">No custom image yet — the public site shows a default curated photo.</span>
                   )}
@@ -458,7 +461,7 @@ export default function ContentPage() {
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {caseStudies.map((item) => (
             <div key={item._id} className="overflow-hidden rounded-2xl border border-[#F1D9D0] bg-[#fffaf8]">
-              <img src={item.beforeImage?.url || ''} alt={item.title} className="h-36 w-full object-cover" />
+              <img src={mediaUrl(item.beforeImage?.url)} alt={item.title} className="h-36 w-full object-cover" />
               <div className="p-4">
                 <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[#D33616]">{item.category}</p>
                 <h3 className="mt-2 text-lg font-bold text-[#690A01]">{item.title}</h3>
@@ -487,7 +490,7 @@ export default function ContentPage() {
                       <label className="field-label">Before image</label>
                       {draftImages.beforeImage?.url ? (
                         <div className="relative">
-                          <img src={draftImages.beforeImage.url} alt="Before" className="h-28 w-full rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
+                          <img src={mediaUrl(draftImages.beforeImage.url)} alt="Before" className="h-28 w-full rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
                           <button onClick={() => removeDraftImage('beforeImage')} className="absolute right-2 top-2 rounded-full border border-red-200 bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-red-600 shadow-sm hover:bg-red-50">Remove</button>
                         </div>
                       ) : (
@@ -503,7 +506,7 @@ export default function ContentPage() {
                       <label className="field-label">After image</label>
                       {draftImages.afterImage?.url ? (
                         <div className="relative">
-                          <img src={draftImages.afterImage.url} alt="After" className="h-28 w-full rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
+                          <img src={mediaUrl(draftImages.afterImage.url)} alt="After" className="h-28 w-full rounded-xl object-cover ring-1 ring-[#F0DDCF]" />
                           <button onClick={() => removeDraftImage('afterImage')} className="absolute right-2 top-2 rounded-full border border-red-200 bg-white/95 px-2 py-0.5 text-[10px] font-semibold text-red-600 shadow-sm hover:bg-red-50">Remove</button>
                         </div>
                       ) : (

@@ -1,6 +1,9 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Sparkles, MoveHorizontal, ArrowUpRight } from 'lucide-react';
 
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
+const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
+
 export default function BeforeAfterSlider({ cases = [] }) {
   const [active, setActive] = useState(0);
   const [pos, setPos] = useState(50);
@@ -76,14 +79,14 @@ export default function BeforeAfterSlider({ cases = [] }) {
               className="case-slider relative h-[470px] cursor-ew-resize select-none overflow-hidden rounded-[1.5rem] outline-none ring-0 focus:ring-2 focus:ring-[#D33616]/30"
             >
               <img
-                src={current.afterImage?.url}
+                src={mediaUrl(current.afterImage?.url)}
                 alt={`After ${current.category}`}
                 className="absolute inset-0 h-full w-full object-cover contrast-[1.08] saturate-[1.15] brightness-[1.02]"
                 draggable={false}
               />
               <div className="absolute inset-0 overflow-hidden" style={{ width: `${pos}%` }}>
                 <img
-                  src={current.beforeImage?.url}
+                  src={mediaUrl(current.beforeImage?.url)}
                   alt={`Before ${current.category}`}
                   className="absolute inset-0 h-full w-full object-cover contrast-[1.08] saturate-[1.15] brightness-[1.02]"
                   draggable={false}
@@ -111,7 +114,7 @@ export default function BeforeAfterSlider({ cases = [] }) {
                   className={`case-card ${index === active ? 'active' : ''}`}
                 >
                   <div className="case-card-visual">
-                    <img src={caseItem.beforeImage?.url} alt={caseItem.title} />
+                    <img src={mediaUrl(caseItem.beforeImage?.url)} alt={caseItem.title} />
                     <div className="case-card-visual-overlay" />
                     <span className="case-badge">{caseItem.category}</span>
                   </div>
