@@ -21,6 +21,8 @@ const SERVICE_IMAGES = {
   'Laser Gingivoplasty': 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=900&q=80',
 };
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=900&q=80';
+const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
+const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
 
 // Short benefit line shown on each card
 const SERVICE_BLURBS = {
@@ -125,7 +127,7 @@ export default function TreatmentPlans({ profile }) {
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((svc, i) => {
-            const img = svc.image?.url || SERVICE_IMAGES[svc.name] || FALLBACK_IMAGE;
+            const img = mediaUrl(svc.image?.url) || SERVICE_IMAGES[svc.name] || FALLBACK_IMAGE;
             return (
               <motion.article
                 key={svc.name}
