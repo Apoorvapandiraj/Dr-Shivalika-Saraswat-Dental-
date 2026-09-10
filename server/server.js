@@ -39,6 +39,11 @@ const allowedOrigins = new Set([
   'https://admindr-shivalika.netlify.app',
   ...configuredOrigins,
 ]);
+const isAllowedOrigin = (origin) => (
+  !origin
+  || allowedOrigins.has(origin)
+  || /^https:\/\/(?:[a-z0-9-]+--)?(?:admindr-shivalika|drshivalikaadmin|drshivalikasaraswatdental)\.netlify\.app$/i.test(origin)
+);
 
 // ===== Security middleware =====
 app.set('trust proxy', 1); // behind reverse proxies (Render/Heroku)
@@ -68,7 +73,7 @@ app.use(compression());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.has(origin)) return callback(null, true);
+      if (isAllowedOrigin(origin)) return callback(null, true);
       return callback(new Error('Origin not allowed by CORS'));
     },
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
