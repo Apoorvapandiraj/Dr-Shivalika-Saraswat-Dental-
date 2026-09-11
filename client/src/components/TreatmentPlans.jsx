@@ -134,24 +134,29 @@ export default function TreatmentPlans({ profile }) {
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.45, delay: (i % 3) * 0.08 }}
-                whileHover={{ y: -8, scale: 1.01 }}
-                className="glass glass-hover relative flex flex-col overflow-hidden rounded-[1.6rem] group"
+                whileHover={{ y: -10, scale: 1.012, rotateX: 1.5, rotateY: i % 2 ? -1.5 : 1.5 }}
+                transition={{ type: 'spring', stiffness: 260, damping: 22, delay: (i % 3) * 0.08 }}
+                className="premium-treatment-card glass glass-hover relative flex flex-col overflow-hidden rounded-[1.6rem] group"
               >
-                <div className="relative h-48 overflow-hidden">
+                <div className="premium-image-frame relative h-52 overflow-hidden">
                   <img
                     src={img}
                     alt={svc.name}
                     loading="lazy"
                     onError={(e) => { e.currentTarget.src = FALLBACK_IMAGE; }}
-                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                    className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.12] group-hover:saturate-[1.18]"
                   />
+                  <div className="pointer-events-none absolute inset-3 rounded-[1rem] border border-white/35" />
+                  <div className="premium-scanline pointer-events-none absolute inset-x-5 top-1/2 h-px" />
                   <div className="absolute inset-0 bg-gradient-to-t from-[#1C1B1F]/80 via-[#1C1B1F]/25 to-transparent" />
                   <div className="absolute bottom-3 left-4 right-4">
                     <h3 className="text-lg font-semibold text-white leading-snug">{svc.name}</h3>
                   </div>
-                  <div className="absolute right-3 top-3 rounded-full border border-white/10 bg-[#1C1B1F]/80 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#FFD8C6] backdrop-blur-sm">
+                  <div className="absolute right-3 top-3 rounded-full border border-[#F2C988]/35 bg-[#32100C]/75 px-2.5 py-1 text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[#F7D69A] backdrop-blur-sm">
                     from ₹{svc.price.toLocaleString('en-IN')}
+                  </div>
+                  <div className="absolute left-3 top-3 rounded-full border border-white/25 bg-white/15 px-2.5 py-1 text-[0.58rem] font-bold uppercase tracking-[0.18em] text-white/90 backdrop-blur-sm">
+                    0{i + 1}
                   </div>
                 </div>
 

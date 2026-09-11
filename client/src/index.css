@@ -88,6 +88,49 @@ body {
   @apply transition-all duration-300 hover:-translate-y-1.5 hover:border-[#D33616]/30 hover:shadow-[0_24px_50px_rgba(105,10,1,0.12)];
 }
 
+.premium-treatment-card {
+  transform-style: preserve-3d;
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
+}
+
+.premium-treatment-card:hover {
+  border-color: rgba(201, 138, 58, 0.42);
+  box-shadow: 0 28px 60px rgba(105, 10, 1, 0.16), 0 0 0 1px rgba(201, 138, 58, 0.08);
+}
+
+.premium-image-frame {
+  isolation: isolate;
+  background: linear-gradient(135deg, #32100C, #D33616 48%, #C98A3A);
+}
+
+.premium-image-frame::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(120deg, transparent 24%, rgba(255,255,255,0.2) 46%, transparent 58%);
+  transform: translateX(-120%);
+  transition: transform 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.premium-treatment-card:hover .premium-image-frame::before {
+  transform: translateX(120%);
+}
+
+.premium-scanline {
+  z-index: 3;
+  background: linear-gradient(90deg, transparent, rgba(242,201,136,0.9), transparent);
+  box-shadow: 0 0 16px rgba(242,201,136,0.6);
+  animation: scanline 4.5s ease-in-out infinite;
+}
+
+@keyframes scanline {
+  0%, 100% { transform: translateY(-4.8rem) scaleX(0.35); opacity: 0; }
+  30%, 70% { opacity: 0.8; }
+  50% { transform: translateY(4.8rem) scaleX(1); opacity: 0.35; }
+}
+
 .glass-input {
   @apply w-full rounded-xl border border-[#E7DDD8] bg-white/70 px-4 py-2.5 text-[#1C1B1F] placeholder:text-[#7A7074] focus:border-[#D33616] focus:outline-none transition-colors;
 }
@@ -343,6 +386,7 @@ select:focus-visible {
 
 .case-card {
   width: 100%;
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
@@ -381,6 +425,7 @@ select:focus-visible {
 .case-card:hover .case-card-visual img,
 .case-card.active .case-card-visual img {
   transform: scale(1.06);
+  filter: saturate(1.2) contrast(1.08);
 }
 
 .case-card-visual-overlay {
@@ -425,6 +470,22 @@ select:focus-visible {
   font-size: 0.74rem;
   font-weight: 600;
   letter-spacing: 0.04em;
+}
+
+.case-card::before {
+  content: '';
+  position: absolute;
+  width: 2rem;
+  height: 2rem;
+  border-left: 1px solid rgba(201,138,58,0.55);
+  border-top: 1px solid rgba(201,138,58,0.55);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.case-card:hover::before,
+.case-card.active::before {
+  opacity: 1;
 }
 
 @keyframes float {
@@ -481,5 +542,9 @@ select:focus-visible {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .premium-scanline {
+    animation: none !important;
   }
 }

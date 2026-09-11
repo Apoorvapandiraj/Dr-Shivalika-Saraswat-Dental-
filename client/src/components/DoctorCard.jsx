@@ -67,6 +67,13 @@ export default function DoctorCard() {
           }}
           className="relative overflow-hidden rounded-[2.6rem] border border-white/80 bg-[linear-gradient(145deg,rgba(255,255,255,0.86),rgba(245,226,214,0.42)_48%,rgba(255,255,255,0.58))] p-3 shadow-[0_36px_110px_rgba(85,18,8,0.24)] backdrop-blur-2xl"
         >
+          <div className="pointer-events-none absolute left-7 top-7 z-50 h-8 w-8 border-l border-t border-[#C98A3A]/70" />
+          <div className="pointer-events-none absolute bottom-7 right-7 z-50 h-8 w-8 border-b border-r border-[#C98A3A]/70" />
+          <motion.div
+            className="pointer-events-none absolute inset-x-8 top-1/2 z-50 h-px origin-left bg-gradient-to-r from-transparent via-[#F2C988]/60 to-transparent"
+            animate={{ scaleX: [0.2, 1, 0.2], opacity: [0, 0.6, 0] }}
+            transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+          />
           <motion.div
             className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full border border-[#C98A3A]/20"
             animate={{ rotate: [0, 360], scale: [0.94, 1.04, 0.94] }}
@@ -91,6 +98,9 @@ export default function DoctorCard() {
             </div>
             <div className="pointer-events-none absolute right-6 top-6 z-40 flex h-8 w-8 items-center justify-center rounded-full border border-white/30 bg-black/10 text-[#F7D69A] backdrop-blur-sm">
               <span className="text-sm">✦</span>
+            </div>
+            <div className="pointer-events-none absolute bottom-24 right-6 z-40 rounded-full border border-[#F2C988]/35 bg-[#2E100C]/45 px-2.5 py-1 text-[9px] font-bold tracking-[0.18em] text-[#F7D69A] backdrop-blur-md">
+              01 / 03
             </div>
             <div className="absolute inset-0 z-10 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.18),transparent_32%)]" />
             <motion.div className="absolute inset-0 z-10" style={{ transformOrigin: 'center bottom' }}>
