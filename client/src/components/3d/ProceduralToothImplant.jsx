@@ -40,7 +40,7 @@ export default function ProceduralToothImplant() {
           <mesh position={[0, 1.2, -0.15]} castShadow>
             <sphereGeometry args={[0.98, 72, 72, 0, Math.PI * 2, 0, Math.PI * 0.72]} />
             <meshPhysicalMaterial
-              color="#F9F4EE"
+              color="#F7E7C6"
               roughness={0.08}
               metalness={0.02}
               clearcoat={1.2}
@@ -54,7 +54,7 @@ export default function ProceduralToothImplant() {
           <mesh position={[0, 0.6, 0.18]} rotation={[0.22, 0, 0]} castShadow>
             <capsuleGeometry args={[0.7, 0.9, 18, 40]} />
             <meshPhysicalMaterial
-              color="#F2E7D6"
+              color="#E8C992"
               roughness={0.14}
               metalness={0.04}
               clearcoat={1.1}
@@ -65,12 +65,12 @@ export default function ProceduralToothImplant() {
 
           <mesh position={[0, 0.18, 0]} castShadow>
             <cylinderGeometry args={[0.58, 0.45, 0.32, 52]} />
-            <meshPhysicalMaterial color="#D7C08C" roughness={0.24} metalness={0.14} clearcoat={1} />
+            <meshPhysicalMaterial color="#C98A3A" roughness={0.2} metalness={0.32} clearcoat={1} />
           </mesh>
 
           <mesh position={[0, -0.24, 0]} castShadow>
             <cylinderGeometry args={[0.5, 0.38, 0.9, 52]} />
-            <meshPhysicalMaterial color="#D4AF37" metalness={0.98} roughness={0.18} envMapIntensity={1.4} />
+            <meshPhysicalMaterial color="#F2C988" metalness={0.98} roughness={0.16} envMapIntensity={1.6} />
           </mesh>
 
           <mesh position={[0, -0.82, 0]} castShadow>
@@ -98,8 +98,8 @@ export default function ProceduralToothImplant() {
           <mesh position={[0, 0.1, -0.72]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[1.32, 0.04, 20, 120]} />
             <meshStandardMaterial
-              color="#00F2FE"
-              emissive="#00F2FE"
+              color="#F2C988"
+              emissive="#F2C988"
               emissiveIntensity={1.4}
               toneMapped={false}
             />
@@ -108,8 +108,8 @@ export default function ProceduralToothImplant() {
           <mesh position={[0, 0.1, -0.8]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[1.7, 0.03, 16, 120]} />
             <meshStandardMaterial
-              color="#9BE7FF"
-              emissive="#9BE7FF"
+              color="#D33616"
+              emissive="#D33616"
               emissiveIntensity={0.8}
               transparent
               opacity={0.9}

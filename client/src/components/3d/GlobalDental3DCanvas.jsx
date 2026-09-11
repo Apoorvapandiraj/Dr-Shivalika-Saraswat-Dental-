@@ -51,8 +51,9 @@ function GradientFallback() {
       className="absolute inset-0"
       style={{
         background:
-          'radial-gradient(1200px 700px at 25% 18%, rgba(10,132,255,0.12) 0%, transparent 62%),' +
-          'radial-gradient(1000px 600px at 75% 72%, rgba(0,242,254,0.09) 0%, transparent 52%)',
+          'radial-gradient(900px 600px at 76% 18%, rgba(201,138,58,0.22) 0%, transparent 62%),' +
+          'radial-gradient(1000px 700px at 20% 76%, rgba(211,54,22,0.2) 0%, transparent 58%),' +
+          'linear-gradient(135deg, #190907 0%, #3a0d09 48%, #120506 100%)',
       }}
     />
   );
@@ -69,14 +70,14 @@ export default function GlobalDental3DCanvas() {
       className="pointer-events-none fixed inset-0 z-0 overflow-hidden opacity-100"
       aria-hidden="true"
       style={{
-        background: 'linear-gradient(180deg, rgba(251,249,248,0.72) 0%, rgba(247,241,237,0.8) 100%)',
+        background: 'linear-gradient(180deg, rgba(18,5,6,0.94) 0%, rgba(58,13,9,0.88) 48%, rgba(18,5,6,0.96) 100%)',
         isolation: 'isolate',
       }}
     >
-      <div className="absolute left-[8%] top-[18%] h-[28rem] w-[28rem] rounded-full bg-[#D33616]/12 blur-[120px]" />
-      <div className="absolute right-[8%] top-[18%] h-[34rem] w-[34rem] rounded-full bg-[#CF8976]/12 blur-[120px]" />
-      <div className="absolute left-[22%] bottom-[10%] h-[24rem] w-[24rem] rounded-full bg-[#f3b7a7]/12 blur-[110px]" />
-      <div className="absolute right-[12%] bottom-[8%] h-[20rem] w-[20rem] rounded-full bg-[#F7D6CB]/12 blur-[110px]" />
+      <div className="absolute left-[8%] top-[18%] h-[28rem] w-[28rem] rounded-full bg-[#D33616]/20 blur-[120px]" />
+      <div className="absolute right-[8%] top-[18%] h-[34rem] w-[34rem] rounded-full bg-[#C98A3A]/16 blur-[120px]" />
+      <div className="absolute left-[22%] bottom-[10%] h-[24rem] w-[24rem] rounded-full bg-[#8B1405]/18 blur-[110px]" />
+      <div className="absolute right-[12%] bottom-[8%] h-[20rem] w-[20rem] rounded-full bg-[#F2C988]/12 blur-[110px]" />
 
       {use3D ? (
         <CanvasErrorBoundary>
@@ -102,15 +103,15 @@ export default function GlobalDental3DCanvas() {
               }}
             >
               <PerspectiveCamera makeDefault position={[0.2, 0.2, 8.5]} fov={30} />
-              <fog attach="fog" args={['#FBF9F8', 8, 20]} />
-              <ambientLight intensity={1.8} color="#fff7f2" />
-              <hemisphereLight args={['#fffaf5', '#f7efe9', 1.8]} />
-              <spotLight position={[0, 5, 7]} angle={0.5} penumbra={0.8} intensity={26} color="#ffffff" castShadow />
-              <directionalLight position={[5, 6, 6]} intensity={2.8} color="#fce8de" castShadow />
-              <directionalLight position={[-8, 3, -4]} intensity={1.6} color="#ffd6cc" />
-              <pointLight position={[5, -2, 2]} intensity={24} color="#D33616" />
-              <pointLight position={[-4, 4, -5]} intensity={22} color="#CF8976" />
-              <pointLight position={[2, 1, 5]} intensity={18} color="#fffaf5" />
+              <fog attach="fog" args={['#1a0707', 8, 20]} />
+              <ambientLight intensity={1.35} color="#f4d6b0" />
+              <hemisphereLight args={['#f8d9ae', '#180607', 1.6]} />
+              <spotLight position={[0, 5, 7]} angle={0.5} penumbra={0.8} intensity={22} color="#fff0d2" castShadow />
+              <directionalLight position={[5, 6, 6]} intensity={2.4} color="#f2c988" castShadow />
+              <directionalLight position={[-8, 3, -4]} intensity={1.4} color="#b8210a" />
+              <pointLight position={[5, -2, 2]} intensity={20} color="#D33616" />
+              <pointLight position={[-4, 4, -5]} intensity={20} color="#C98A3A" />
+              <pointLight position={[2, 1, 5]} intensity={15} color="#fff0d2" />
 
               <group position={[3.2, 0.15, 0]} rotation={[0.18, -0.82, 0]} scale={2.15}>
                 <ProceduralToothImplant />
@@ -125,8 +126,8 @@ export default function GlobalDental3DCanvas() {
         <GradientFallback />
       )}
 
-      <div className="absolute inset-0 bg-gradient-to-t from-[#FBF9F8] via-transparent to-[#FBF9F8]/60" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_35%,rgba(251,249,248,0.98)_100%)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#120506]/95 via-transparent to-[#190907]/60" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_28%,rgba(18,5,6,0.84)_100%)]" />
     </div>
   );
 }
