@@ -62,20 +62,17 @@ export default function GlobalDental3DCanvas() {
 
   return (
     <div
-      className="global-dental-3d-layer pointer-events-none fixed inset-0 z-[5] overflow-hidden"
+      className="global-dental-3d-layer pointer-events-none fixed inset-0 z-0 overflow-hidden"
       aria-hidden="true"
     >
       <div
         ref={containerRef}
         className="absolute inset-0"
-        style={{
-          background: 'linear-gradient(180deg, rgba(251,249,248,0.92), rgba(247,241,237,0.9))',
-          mixBlendMode: 'multiply',
-        }}
+        style={{ background: 'transparent' }}
       />
       {(prefersReducedMotion || isSmallScreen) && <StaticFallback />}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#FBF9F8]/25 via-transparent to-[#FBF9F8]/10" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_38%,rgba(251,249,248,0.24)_100%)]" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#FBF9F8]/35 via-transparent to-[#FBF9F8]/15" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_38%,rgba(251,249,248,0.16)_100%)]" />
     </div>
   );
 }
