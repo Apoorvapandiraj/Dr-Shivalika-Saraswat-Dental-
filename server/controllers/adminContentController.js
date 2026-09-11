@@ -5,9 +5,24 @@ const { upload } = require('../middleware/upload');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const cloudinary = require('cloudinary').v2;
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const CONTENT_DIR = path.join(__dirname, '..', 'uploads', 'content');
+
+const hasCloudinary = Boolean(
+  process.env.CLOUDINARY_CLOUD_NAME
+  && process.env.CLOUDINARY_API_KEY
+  && process.env.CLOUDINARY_API_SECRET
+);
+
+if (hasCloudinary) {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+  });
+}
 
 const saveImageFile = (file, req) => {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
@@ -67,7 +82,19 @@ exports.uploadContentImage = asyncHandler(async (req, res) => {
   if (!file) throw new AppError('Image file is required', 400);
   if (!IMAGE_TYPES.includes(file.mimetype)) throw new AppError('Only JPG, PNG and WEBP images are allowed', 400);
 
-  const image = saveImageFile(file, req);
+  let image;
+  if (hasCloudinary) {
+    const result = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: 'dr-shivalika/content', resource_type: 'image' },
+        (error, uploaded) => (error ? reject(error) : resolve(uploaded))
+      );
+      stream.end(file.buffer);
+    });
+    image = { url: result.secure_url, publicId: result.public_id };
+  } else {
+    image = saveImageFile(file, req);
+  }
   res.status(201).json({ success: true, message: 'Image uploaded', data: image });
 });
 
