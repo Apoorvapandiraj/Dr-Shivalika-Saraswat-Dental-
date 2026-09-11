@@ -93,6 +93,80 @@ body {
   transition: border-color 0.35s ease, box-shadow 0.35s ease, background 0.35s ease;
 }
 
+.treatment-3d-scene {
+  overflow: hidden;
+  perspective: 1100px;
+  opacity: 0.78;
+  mask-image: linear-gradient(180deg, black 0%, transparent 92%);
+}
+
+.treatment-3d-orb {
+  position: absolute;
+  left: 7%;
+  top: 28%;
+  width: 11rem;
+  height: 11rem;
+  transform-style: preserve-3d;
+  filter: drop-shadow(0 24px 40px rgba(105,10,1,0.14));
+}
+
+.treatment-orb-core {
+  position: absolute;
+  inset: 28%;
+  border-radius: 999px;
+  background: radial-gradient(circle at 32% 25%, #fff8e7, #F2C988 32%, #D33616 72%, #690A01 100%);
+  box-shadow: inset -14px -18px 26px rgba(70, 8, 2, 0.3), 0 0 42px rgba(201,138,58,0.26);
+}
+
+.treatment-orb-ring {
+  position: absolute;
+  inset: 8%;
+  border: 1px solid rgba(201,138,58,0.52);
+  border-radius: 50%;
+  transform-style: preserve-3d;
+}
+
+.treatment-orb-ring-one { transform: rotateX(68deg) rotateZ(18deg); }
+.treatment-orb-ring-two { transform: rotateY(68deg) rotateZ(-24deg); border-color: rgba(211,54,22,0.32); }
+.treatment-orb-ring-three { inset: 17%; transform: rotateX(16deg) rotateY(70deg); border-color: rgba(255,255,255,0.5); }
+
+.treatment-3d-prism {
+  position: absolute;
+  right: 8%;
+  top: 16%;
+  width: 5rem;
+  height: 5rem;
+  transform-style: preserve-3d;
+}
+
+.treatment-3d-prism span {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(201,138,58,0.46);
+  background: linear-gradient(135deg, rgba(255,255,255,0.22), rgba(211,54,22,0.12));
+  backdrop-filter: blur(4px);
+}
+
+.treatment-3d-prism span:nth-child(1) { transform: translateZ(2.5rem); }
+.treatment-3d-prism span:nth-child(2) { transform: rotateY(180deg) translateZ(2.5rem); }
+.treatment-3d-prism span:nth-child(3) { transform: rotateY(90deg) translateZ(2.5rem); }
+.treatment-3d-prism span:nth-child(4) { transform: rotateY(-90deg) translateZ(2.5rem); }
+.treatment-3d-prism span:nth-child(5) { transform: rotateX(90deg) translateZ(2.5rem); }
+.treatment-3d-prism span:nth-child(6) { transform: rotateX(-90deg) translateZ(2.5rem); }
+
+.treatment-3d-grid {
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  bottom: 3%;
+  height: 10rem;
+  transform: perspective(500px) rotateX(68deg);
+  transform-origin: bottom;
+  background-image: linear-gradient(rgba(201,138,58,0.16) 1px, transparent 1px), linear-gradient(90deg, rgba(201,138,58,0.16) 1px, transparent 1px);
+  background-size: 2.3rem 2.3rem;
+  opacity: 0.34;
+}
+
 .premium-treatment-card:hover {
   border-color: rgba(201, 138, 58, 0.42);
   box-shadow: 0 28px 60px rgba(105, 10, 1, 0.16), 0 0 0 1px rgba(201, 138, 58, 0.08);
@@ -546,5 +620,28 @@ select:focus-visible {
 
   .premium-scanline {
     animation: none !important;
+  }
+
+  .treatment-3d-scene {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .treatment-3d-orb {
+    left: -3rem;
+    top: 34%;
+    transform: scale(0.72);
+  }
+
+  .treatment-3d-prism {
+    right: -1.5rem;
+    top: 12%;
+    transform: scale(0.72);
+  }
+
+  .treatment-3d-grid {
+    left: -10%;
+    right: -10%;
   }
 }

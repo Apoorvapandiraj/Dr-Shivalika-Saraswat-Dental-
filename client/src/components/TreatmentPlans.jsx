@@ -85,6 +85,32 @@ export default function TreatmentPlans({ profile }) {
         />
       </motion.div>
 
+      <div className="treatment-3d-scene pointer-events-none absolute inset-0 z-[3]" aria-hidden="true">
+        <motion.div
+          className="treatment-3d-orb"
+          animate={{ y: [0, -22, 0], rotate: [0, 8, -5, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          <div className="treatment-orb-core" />
+          <div className="treatment-orb-ring treatment-orb-ring-one" />
+          <div className="treatment-orb-ring treatment-orb-ring-two" />
+          <div className="treatment-orb-ring treatment-orb-ring-three" />
+        </motion.div>
+        <motion.div
+          className="treatment-3d-prism"
+          animate={{ rotateX: [0, 360], rotateY: [0, 180], y: [0, 16, 0] }}
+          transition={{ rotateX: { duration: 24, repeat: Infinity, ease: 'linear' }, rotateY: { duration: 18, repeat: Infinity, ease: 'linear' }, y: { duration: 9, repeat: Infinity, ease: 'easeInOut' } }}
+        >
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+          <span />
+        </motion.div>
+        <div className="treatment-3d-grid" />
+      </div>
+
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <motion.div
           initial={{ opacity: 0, y: 24 }}
