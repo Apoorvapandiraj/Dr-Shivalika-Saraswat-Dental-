@@ -59,6 +59,10 @@ body {
   z-index: 1;
 }
 
+.global-dental-3d-layer {
+  will-change: opacity;
+}
+
 .luxury-section {
   position: relative;
   background: rgba(255, 255, 255, 0.18);
