@@ -1,8 +1,9 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import DoctorCard from './DoctorCard.jsx';
 
 export default function ToothHero3D() {
+  const reduceMotion = useReducedMotion();
   const scrollTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
@@ -32,7 +33,11 @@ export default function ToothHero3D() {
       </div>
 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-6 grid lg:grid-cols-[1.08fr_0.92fr] gap-14 items-center py-20 md:py-24">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.9 }}>
+        <motion.div
+          initial={{ opacity: 0, y: reduceMotion ? 0 : 30, filter: reduceMotion ? 'blur(0px)' : 'blur(14px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: reduceMotion ? 0 : 1.05, ease: [0.22, 1, 0.36, 1] }}
+        >
           <div className="section-kicker mb-7">Next-Gen Dental Platform</div>
 
           <h1 className="text-5xl md:text-6xl lg:text-[4.2rem] font-extrabold leading-[0.95] tracking-[-0.07em] text-[#690A01]">
@@ -63,9 +68,9 @@ export default function ToothHero3D() {
         </motion.div>
 
         <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, delay: 0.25 }}
+          initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.92, filter: reduceMotion ? 'blur(0px)' : 'blur(14px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: reduceMotion ? 0 : 1.15, delay: reduceMotion ? 0 : 0.2, ease: [0.22, 1, 0.36, 1] }}
           className="relative mx-auto w-full max-w-[32rem]"
         >
           <div className="float-card top-[10%] right-[0%] w-[15.5rem] animate-[pulseGlow_4s_ease-in-out_infinite]">
