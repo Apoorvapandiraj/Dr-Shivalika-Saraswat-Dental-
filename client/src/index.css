@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -14,6 +14,8 @@
   --accent-coral: #CF8976;
   --text-main: #1C1B1F;
   --text-muted: #6E6D7A;
+  --champagne: #C98A3A;
+  --hairline: rgba(105, 10, 1, 0.11);
   --shadow-soft: 0 20px 40px rgba(105, 10, 1, 0.06);
 }
 
@@ -30,6 +32,12 @@ body {
     linear-gradient(180deg, #fffaf8 0%, #f7f1ee 35%, #f9f4f2 100%);
   color: var(--text-main);
   min-height: 100vh;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(211, 54, 22, 0.2);
+  color: var(--primary-red);
 }
 
 #root {
@@ -54,14 +62,26 @@ body {
 .luxury-section {
   position: relative;
   background: rgba(255, 255, 255, 0.18);
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(8px);
 }
 
 .glass {
   @apply rounded-[1.65rem] border border-white/70 bg-white/70 backdrop-blur-xl;
+  position: relative;
+  isolation: isolate;
   box-shadow:
     0 14px 30px rgba(30, 12, 8, 0.06),
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+.glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  background: linear-gradient(135deg, rgba(255,255,255,0.28), transparent 38%, rgba(211,54,22,0.035));
 }
 
 .glass-hover {
@@ -82,7 +102,7 @@ body {
 .btn-primary {
   @apply inline-flex items-center justify-center gap-2 rounded-full px-8 py-3 font-semibold text-white transition-all duration-300 uppercase tracking-[0.12em] text-[0.7rem];
   background: linear-gradient(135deg, #d33616 0%, #b8210a 35%, #8b1405 100%);
-  box-shadow: 0 16px 30px rgba(211, 54, 22, 0.28), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: 0 16px 30px rgba(211, 54, 22, 0.28), inset 0 1px 0 rgba(255,255,255,0.2), 0 0 0 1px rgba(105,10,1,0.08);
   position: relative;
   overflow: hidden;
 }
@@ -116,6 +136,15 @@ body {
   border-color: rgba(211, 54, 22, 0.25);
 }
 
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(201, 138, 58, 0.38);
+  outline-offset: 3px;
+}
+
 .section-kicker {
   display: inline-flex;
   align-items: center;
@@ -139,6 +168,13 @@ body {
   color: var(--primary-red);
   margin-top: 1rem;
   text-wrap: balance;
+  font-weight: 700;
+}
+
+.section-heading,
+.premium-nav .logo-mark,
+.float-card strong {
+  font-family: 'Cormorant Garamond', Georgia, serif;
 }
 
 .section-copy {
@@ -153,9 +189,9 @@ body {
   top: 0;
   z-index: 30;
   backdrop-filter: blur(18px);
-  background: rgba(251, 249, 248, 0.72);
-  border-bottom: 1px solid rgba(105, 10, 1, 0.08);
-  box-shadow: 0 10px 30px rgba(72, 19, 10, 0.04);
+  background: rgba(251, 249, 248, 0.82);
+  border-bottom: 1px solid var(--hairline);
+  box-shadow: 0 10px 30px rgba(72, 19, 10, 0.055);
 }
 
 .premium-nav-inner {
@@ -173,7 +209,7 @@ body {
   gap: 0.7rem;
   color: var(--primary-red);
   text-decoration: none;
-  font-size: 1.45rem;
+  font-size: 1.65rem;
   font-weight: 800;
   letter-spacing: -0.06em;
 }
@@ -198,10 +234,28 @@ body {
   font-size: 0.94rem;
   font-weight: 600;
   transition: color 0.2s ease;
+  position: relative;
+}
+
+.premium-nav-links a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.55rem;
+  height: 1px;
+  background: var(--champagne);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 0.25s ease;
 }
 
 .premium-nav-links a:hover {
   color: var(--primary-orange);
+}
+
+.premium-nav-links a:hover::after {
+  transform: scaleX(1);
 }
 
 .float-card {
@@ -399,7 +453,33 @@ body {
 }
 
 @media (max-width: 640px) {
+  .premium-nav-inner {
+    padding: 0.9rem 1.1rem;
+  }
+
+  .logo-mark {
+    font-size: 1.35rem;
+  }
+
+  .premium-nav .btn-primary {
+    padding-inline: 1rem;
+    font-size: 0.58rem;
+  }
+
+  .section-heading {
+    font-size: clamp(2.25rem, 12vw, 3.2rem);
+  }
+
   .case-card-rail {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }
