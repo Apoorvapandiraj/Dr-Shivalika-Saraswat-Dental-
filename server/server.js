@@ -37,13 +37,18 @@ const allowedOrigins = new Set([
   'http://localhost:3001',
   'https://drshivalikasaraswatdental.netlify.app',
   'https://admindr-shivalika.netlify.app',
+  'https://dr-shivalika-saraswat-dental.vercel.app',
   ...configuredOrigins,
 ]);
-const isAllowedOrigin = (origin) => (
-  !origin
-  || allowedOrigins.has(origin)
-  || /^https:\/\/(?:[a-z0-9-]+--)?(?:admindr-shivalika|drshivalikaadmin|drshivalikasaraswatdental)\.netlify\.app$/i.test(origin)
-);
+const isAllowedOrigin = (origin) => {
+  if (!origin) return true;
+  if (allowedOrigins.has(origin)) return true;
+
+  const isNetlifyPreview = /^https:\/\/(?:[a-z0-9-]+--)?(?:admindr-shivalika|drshivalikaadmin|drshivalikasaraswatdental)\.netlify\.app$/i.test(origin);
+  const isVercelPreview = /^https:\/\/dr-shivalika-saraswat-dental(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(origin);
+
+  return isNetlifyPreview || isVercelPreview;
+};
 
 // ===== Security middleware =====
 app.set('trust proxy', 1); // behind reverse proxies (Render/Heroku)

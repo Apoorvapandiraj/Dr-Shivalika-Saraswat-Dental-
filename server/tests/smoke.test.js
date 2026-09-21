@@ -30,6 +30,15 @@ describe('Health & Public API', () => {
     expect(res.body.mongodb).toBe('connected');
   });
 
+  test('Vercel git preview URLs are allowed by CORS', async () => {
+    const res = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://dr-shivalika-saraswat-dental-git-feature-branch.vercel.app');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['access-control-allow-origin']).toBe('https://dr-shivalika-saraswat-dental-git-feature-branch.vercel.app');
+  });
+
   test('GET /api/profile returns 404 before seeding', async () => {
     const res = await request(app).get('/api/profile');
     expect(res.status).toBe(404);
