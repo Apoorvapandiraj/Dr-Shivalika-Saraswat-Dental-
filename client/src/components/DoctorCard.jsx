@@ -90,7 +90,7 @@ export default function DoctorCard() {
             transition={{ duration: 5.8, repeat: Infinity, ease: 'easeInOut' }}
           />
 
-          <a href="#profile" className="group relative block overflow-hidden rounded-[1.8rem] border border-[#FFF8F2]/80 bg-[#32100C] p-1 shadow-[inset_0_0_0_1px_rgba(201,138,58,0.2),0_18px_45px_rgba(64,12,4,0.2)]">
+          <a href="#about" className="group relative block overflow-hidden rounded-[1.8rem] border border-[#FFF8F2]/80 bg-[#32100C] p-1 shadow-[inset_0_0_0_1px_rgba(201,138,58,0.2),0_18px_45px_rgba(64,12,4,0.2)]">
             <div className="pointer-events-none absolute inset-2 z-40 rounded-[1.45rem] border border-[#F2C988]/45" />
             <div className="pointer-events-none absolute left-6 top-6 z-40 flex items-center gap-2 text-[9px] font-bold uppercase tracking-[0.28em] text-[#FFF2DE]">
               <span className="h-px w-7 bg-[#EBC27B]" />

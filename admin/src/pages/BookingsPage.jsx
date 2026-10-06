@@ -77,7 +77,7 @@ export default function BookingsPage() {
                 </td>
                 <td className="px-4 py-3">{b.service?.name}</td>
                 <td className="px-4 py-3">
-                  {new Date(b.appointmentDate).toLocaleDateString('en-IN')} @ {b.timeSlot}
+                  {new Date(b.appointmentDate).toLocaleDateString('en-IN', { timeZone: 'UTC' })} @ {b.timeSlot}
                 </td>
                 <td className="px-4 py-3">₹{b.service?.price}</td>
                 <td className="px-4 py-3">

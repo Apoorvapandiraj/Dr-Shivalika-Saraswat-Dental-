@@ -84,14 +84,13 @@ export default function GlobalDental3DCanvas() {
           <Suspense fallback={<GradientFallback />}>
             <Canvas
               camera={{ position: [0.3, 0.4, 9.2], fov: 30 }}
-              dpr={[1, 1.25]}
+              dpr={[1, 1]}
               gl={{
                 antialias: true,
                 alpha: true,
                 powerPreference: 'high-performance',
                 failIfMajorPerformanceCaveat: false,
               }}
-              shadows
               className="absolute inset-0"
               style={{
                 position: 'absolute',
