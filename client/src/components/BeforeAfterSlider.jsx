@@ -1,8 +1,6 @@
 import React, { useCallback, useRef, useState } from 'react';
 import { Sparkles, MoveHorizontal, ArrowUpRight } from 'lucide-react';
-
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
-const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
+import { mediaUrl } from '../services/api.js';
 
 export default function BeforeAfterSlider({ cases = [] }) {
   const [active, setActive] = useState(0);

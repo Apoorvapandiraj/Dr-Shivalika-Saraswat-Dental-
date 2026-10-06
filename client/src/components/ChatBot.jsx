@@ -70,22 +70,32 @@ export default function ChatBot() {
     if (/(pay|payment|razorpay|online|upi|card)/.test(t))
       return { text: '💳 Pay online securely via Razorpay (cards/UPI) at checkout, or at the clinic after your visit. E-receipts are automatic.', interest: 'Payment' };
     if (/(book|appointment|schedule|consultation|slot|date|reserve|visit|cancel|reschedule)/.test(t))
-      return { text: '📅 Booking takes under a minute:\n1️⃣ Choose your treatment\n2️⃣ Pick a date & available slot\n3️⃣ Verify with the OTP emailed to you — instant confirmation!\n\nScroll to the "Secure Booking" section on this page, or I can arrange a callback. ✨ Free rescheduling.', interest: 'Appointment / Booking' };
+      return { text: '📅 Booking takes under a minute:\n1️⃣ Choose your treatment\n2️⃣ Pick a date & available slot\n3️⃣ Share your details — instant confirmation!\n\nScroll to the "Secure Booking" section on this page, or I can arrange a callback. ✨ Free rescheduling.', interest: 'Appointment / Booking' };
     if (/(emergency|urgent|pain|hurt|bleed|swollen)/.test(t))
       return { text: '🆘 For emergencies please call +91 98765 43210 right away. If critical, visit the nearest hospital — we will follow up with you.', interest: 'Emergency' };
     return null;
   };
 
   const saveLead = async (overrides = {}) => {
-    if (leadSaved || !customer.name) return;
+    const snapshot = {
+      name: customer.name,
+      phone: customer.phone,
+      email: customer.email,
+      interest: customer.interest,
+      note: customer.note,
+      ...overrides,
+    };
+    // Name is required by the API — never fire a doomed request (it would
+    // trip the rate limiter and lose the lead).
+    if (leadSaved || !snapshot.name) return;
     setLeadSaved(true);
     try {
       await api.post('/leads', {
-        name: customer.name,
-        phone: customer.phone,
-        email: customer.email,
-        interest: overrides.interest || customer.interest,
-        note: overrides.note || customer.note,
+        name: snapshot.name,
+        phone: snapshot.phone,
+        email: snapshot.email,
+        interest: snapshot.interest,
+        note: snapshot.note,
       });
     } catch {
       /* silent — rate limit/offline; phone number still visible to staff via chat */
@@ -95,15 +105,16 @@ export default function ChatBot() {
   const handleAnswer = (text) => {
     const lower = text.toLowerCase();
     if (/(done|finished|nothing else|that'?s all|ok thanks|bye|no thanks)/.test(lower)) {
-      saveLead({ note: customer.note || 'Completed chat' });
+      saveLead({ note: customer.note || 'Completed chat', interest: customer.interest || 'General enquiry' });
       setPhase('done');
       botSay(`Thank you, ${customer.name}! 🎉 Your details are with our care team — we'll reach out if needed.\n\nUntil then, keep smiling! 😊✨`);
       return;
     }
     const ans = intentAnswer(text);
     if (ans) {
-      setCustomer((c) => ({ ...c, interest: ans.interest }));
-      saveLead({ interest: ans.interest });
+      const nextInterest = customer.interest ? `${customer.interest}; ${ans.interest}` : ans.interest;
+      setCustomer((c) => ({ ...c, interest: nextInterest }));
+      saveLead({ interest: nextInterest });
       setPhase('followup');
       botSay(ans.text, ['Yes, something else', 'Done for now']);
       return;

@@ -6,7 +6,7 @@ import ProceduralToothImplant from './ProceduralToothImplant.jsx';
 /**
  * GlobalDental3DCanvas — persistent, isolated 3D motion background.
  *
- * SAFETY: sits in a fixed inset-0 pointer-events-none -z-10 wrapper,
+ * SAFETY: sits in a fixed inset-0 pointer-events-none background layer,
  * so it never intercepts clicks/touches and never collides with route state,
  * context providers, booking/OTP flows or API layers. Purely additive.
  */
@@ -66,7 +66,7 @@ export default function GlobalDental3DCanvas() {
 
   return (
     <div
-      className="global-dental-3d-layer pointer-events-none fixed inset-0 z-[5] overflow-hidden opacity-[0.55]"
+      className="global-dental-3d-layer pointer-events-none fixed inset-0 z-0 overflow-hidden opacity-[0.55]"
       aria-hidden="true"
       style={{
         background: 'transparent',

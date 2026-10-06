@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import api from '../services/api.js';
+import api, { mediaUrl } from '../services/api.js';
 
 const emptyService = () => ({ name: '', description: '', price: 0, duration: 30, image: { url: '', publicId: '' } });
 const emptyCaseStudy = () => ({
@@ -12,9 +12,6 @@ const emptyCaseStudy = () => ({
   displayOrder: 0,
   isApproved: true,
 });
-
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
-const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
 
 export default function ContentPage() {
   const [profile, setProfile] = useState(null);

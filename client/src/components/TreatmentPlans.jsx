@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, Clock, ShieldCheck } from 'lucide-react';
+import { mediaUrl } from '../services/api.js';
 
 /**
  * Treatment Plans showcase — visual cards with imagery, "from" pricing,
@@ -21,8 +22,6 @@ const SERVICE_IMAGES = {
   'Laser Gingivoplasty': 'https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=900&q=80',
 };
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=900&q=80';
-const API_ORIGIN = (import.meta.env.VITE_API_URL || 'https://dr-shivalika-saraswat-dental-1.onrender.com/api').replace(/\/api\/?$/, '');
-const mediaUrl = (url) => (url?.startsWith('http') ? url : url ? `${API_ORIGIN}${url}` : '');
 
 // Short benefit line shown on each card
 const SERVICE_BLURBS = {

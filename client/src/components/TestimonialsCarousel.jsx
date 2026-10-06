@@ -17,7 +17,7 @@ export default function TestimonialsCarousel() {
   useEffect(() => {
     const load = async () => {
       try {
-        const { data } = await api.get('/reviews/testimonials/all');
+        const { data } = await api.get('/reviews/testimonials', { params: { limit: 20 } });
         setTestimonials(data.data || []);
       } catch {
         setTestimonials([]);

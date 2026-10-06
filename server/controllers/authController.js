@@ -32,7 +32,10 @@ exports.login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) throw new AppError('Email and password are required', 400);
 
-  const user = await User.findOne({ email, deletedAt: null }).select('+password');
+  // Registration lowercases emails — login must too (plus trim), otherwise
+  // "Admin@x.com" can register but never log back in.
+  const normalizedEmail = String(email).toLowerCase().trim();
+  const user = await User.findOne({ email: normalizedEmail, deletedAt: null }).select('+password');
   if (!user || !(await user.matchPassword(password))) {
     throw new AppError('Invalid email or password', 401);
   }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import api from '../services/api.js';
+import api, { mediaUrl } from '../services/api.js';
 
 const TABS = ['Reviews', 'Testimonials'];
 
@@ -74,7 +74,7 @@ export default function ModerationPage() {
             <p className="text-[#403E45] mt-3">{item.comment || item.description}</p>
             {item.videoFile?.url && (
               <video
-                src={`${item.videoFile.url.startsWith('http') ? '' : window.location.origin}${item.videoFile.url}`}
+                src={mediaUrl(item.videoFile.url)}
                 controls
                 playsInline
                 className="mt-3 rounded-lg w-full max-h-72 bg-black"

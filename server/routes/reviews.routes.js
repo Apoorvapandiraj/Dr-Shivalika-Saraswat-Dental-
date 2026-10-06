@@ -8,6 +8,8 @@ const rateLimiter = require('../middleware/rateLimiter');
 router.get('/doctor/:doctorId', c.getApprovedReviews);
 router.post('/', c.submitReview);
 router.get('/testimonials', c.getAllApprovedTestimonials);
+// Back-compat alias — older client builds call /testimonials/all
+router.get('/testimonials/all', c.getAllApprovedTestimonials);
 router.get('/testimonials/pending', authMiddleware, checkPermission('moderate_reviews'), c.getPendingTestimonials);
 router.get('/testimonials/doctor/:doctorId', c.getApprovedTestimonials);
 // Reel submission: 50MB multipart, rate-limited (10 uploads / 30 min / IP)

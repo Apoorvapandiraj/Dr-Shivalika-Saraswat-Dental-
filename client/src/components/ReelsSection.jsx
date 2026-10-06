@@ -4,15 +4,11 @@ import {
   Play, Volume2, VolumeX, Video, Sparkles, X, Camera,
   Upload, RotateCcw, Send, PenLine, ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import api from '../services/api.js';
+import api, { mediaUrl } from '../services/api.js';
 import { ReelModal, ReviewModal } from './ReelsModals.jsx';
 
 const MAX_REEL_SECONDS = 60;
 const MAX_REEL_BYTES = 50 * 1024 * 1024; // matches server cap
-
-// API origin for absolute video URLs (baseURL is http://localhost:5050/api)
-const MEDIA_ORIGIN = (api.defaults.baseURL || '').replace(/\/api\/?$/, '');
-const mediaUrl = (u) => (u?.startsWith('http') ? u : `${MEDIA_ORIGIN}${u}`);
 
 const Stars = ({ value, className = '' }) => (
   <span className={`text-[#C98A3A] ${className}`}>{'★'.repeat(value)}{'☆'.repeat(5 - value)}</span>
