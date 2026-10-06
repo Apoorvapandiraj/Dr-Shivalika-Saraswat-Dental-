@@ -1,32 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import api from '../services/api.js';
 
-const Stars = ({ rating }) => (
-  <span className="text-[#C98A3A]" aria-label={`${rating} out of 5 stars`}>
-    {'★'.repeat(rating)}
-    {'☆'.repeat(5 - rating)}
-  </span>
-);
+const Stars = ({ rating }) => {
+  const safe = Math.max(0, Math.min(5, Number(rating) || 0));
+  return (
+    <span className="text-[#C98A3A]" aria-label={`${safe} out of 5 stars`}>
+      {'★'.repeat(safe)}
+      {'☆'.repeat(5 - safe)}
+    </span>
+  );
+};
 
-export default function TestimonialsCarousel() {
-  const [testimonials, setTestimonials] = useState([]);
+export default function TestimonialsCarousel({ testimonials = [] }) {
   const [index, setIndex] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const { data } = await api.get('/reviews/testimonials', { params: { limit: 20 } });
-        setTestimonials(data.data || []);
-      } catch {
-        setTestimonials([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
 
   useEffect(() => {
     if (testimonials.length < 2) return;
@@ -34,8 +20,13 @@ export default function TestimonialsCarousel() {
     return () => clearInterval(t);
   }, [testimonials.length]);
 
-  if (loading || testimonials.length === 0) return null;
-  const current = testimonials[index];
+  useEffect(() => {
+    // Keep the cursor valid when the list shrinks (e.g. refetch returns fewer)
+    setIndex((i) => (testimonials.length ? Math.min(i, testimonials.length - 1) : 0));
+  }, [testimonials.length]);
+
+  if (testimonials.length === 0) return null;
+  const current = testimonials[Math.min(index, testimonials.length - 1)] || {};
 
   return (
     <section className="py-20 bg-gradient-to-b from-[#F7F1ED] to-[#F1E8E3]">
@@ -51,9 +42,9 @@ export default function TestimonialsCarousel() {
             className="rounded-2xl border border-[#E8DAD5] bg-white/70 p-10 shadow-[0_16px_40px_rgba(105,10,1,0.06)] backdrop-blur-xl"
           >
             <Stars rating={current.rating} />
-            <h3 className="mt-4 mb-3 text-xl font-semibold text-[#690A01]">{current.title}</h3>
-            <blockquote className="text-lg leading-relaxed text-[#403E45]">“{current.description}”</blockquote>
-            <figcaption className="mt-6 font-medium text-[#D33616]">— {current.patientName}</figcaption>
+            <h3 className="mt-4 mb-3 text-xl font-semibold text-[#690A01]">{current.title || 'Patient Story'}</h3>
+            <blockquote className="text-lg leading-relaxed text-[#403E45]">“{current.description || current.comment || ''}”</blockquote>
+            <figcaption className="mt-6 font-medium text-[#D33616]">— {current.patientName || 'Verified Patient'}</figcaption>
           </motion.figure>
         </AnimatePresence>
 

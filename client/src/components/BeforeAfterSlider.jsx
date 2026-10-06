@@ -41,7 +41,9 @@ export default function BeforeAfterSlider({ cases = [] }) {
   };
 
   if (!cases.length) return null;
-  const current = cases[active];
+  // Guard the cursor — a refetch may return fewer cases than the stored index
+  const safeActive = Math.min(active, cases.length - 1);
+  const current = cases[safeActive];
 
   return (
     <section id="case-vault" className="case-vault py-24">
@@ -60,7 +62,7 @@ export default function BeforeAfterSlider({ cases = [] }) {
               <button
                 key={c._id || i}
                 onClick={() => { setActive(i); setPos(50); }}
-                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${i === active ? 'bg-[#D33616] text-white shadow-lg shadow-[#D33616]/20' : 'bg-[#F7F1ED] text-[#5F5A62] hover:text-[#690A01]'}`}
+                className={`rounded-full px-4 py-1.5 text-xs font-medium transition-all ${i === safeActive ? 'bg-[#D33616] text-white shadow-lg shadow-[#D33616]/20' : 'bg-[#F7F1ED] text-[#5F5A62] hover:text-[#690A01]'}`}
               >
                 {c.category}
               </button>
@@ -109,10 +111,10 @@ export default function BeforeAfterSlider({ cases = [] }) {
                   key={caseItem._id || index}
                   type="button"
                   onClick={() => { setActive(index); setPos(50); }}
-                  className={`case-card ${index === active ? 'active' : ''}`}
+                  className={`case-card ${index === safeActive ? 'active' : ''}`}
                 >
                   <div className="case-card-visual">
-                    <img src={mediaUrl(caseItem.beforeImage?.url)} alt={caseItem.title} />
+                    <img src={mediaUrl(caseItem.beforeImage?.url) || mediaUrl(caseItem.afterImage?.url) || ''} alt={caseItem.title || caseItem.category || 'Case result'} />
                     <div className="case-card-visual-overlay" />
                     <span className="case-badge">{caseItem.category}</span>
                   </div>

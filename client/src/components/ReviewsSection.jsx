@@ -2,9 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import api from '../services/api.js';
 
-const Stars = ({ value }) => (
-  <span className="text-[#C98A3A]">{'★'.repeat(value)}{'☆'.repeat(5 - value)}</span>
-);
+const Stars = ({ value }) => {
+  const safe = Math.max(0, Math.min(5, Number(value) || 0));
+  return <span className="text-[#C98A3A]">{'★'.repeat(safe)}{'☆'.repeat(5 - safe)}</span>;
+};
+
+const safeDate = (v) => {
+  const d = new Date(v);
+  return Number.isNaN(d.getTime()) ? '' : d.toLocaleDateString('en-IN');
+};
 
 export default function ReviewsSection({ profile }) {
   const [reviews, setReviews] = useState([]);
@@ -100,10 +106,10 @@ export default function ReviewsSection({ profile }) {
             >
               <div className="mb-2 flex items-center justify-between">
                 <Stars value={r.rating} />
-                <span className="text-xs text-[#6E6D7A]">{new Date(r.createdAt).toLocaleDateString('en-IN')}</span>
+                <span className="text-xs text-[#6E6D7A]">{safeDate(r.createdAt)}</span>
               </div>
-              <p className="text-[#403E45]">{r.comment}</p>
-              <p className="mt-3 text-sm font-medium text-[#D33616]">— {r.patientName}</p>
+              <p className="text-[#403E45]">{r.comment || ''}</p>
+              <p className="mt-3 text-sm font-medium text-[#D33616]">— {r.patientName || 'Verified Patient'}</p>
             </motion.div>
           ))}
         </div>

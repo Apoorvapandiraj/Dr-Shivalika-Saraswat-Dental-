@@ -1,29 +1,43 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Play, Volume2, VolumeX, Video, Sparkles, X, Camera,
   Upload, RotateCcw, Send, PenLine, ChevronLeft, ChevronRight,
 } from 'lucide-react';
-import api, { mediaUrl } from '../services/api.js';
+import { mediaUrl } from '../services/api.js';
 import { ReelModal, ReviewModal } from './ReelsModals.jsx';
 
 const MAX_REEL_SECONDS = 60;
 const MAX_REEL_BYTES = 50 * 1024 * 1024; // matches server cap
 
-const Stars = ({ value, className = '' }) => (
-  <span className={`text-[#C98A3A] ${className}`}>{'★'.repeat(value)}{'☆'.repeat(5 - value)}</span>
-);
+const Stars = ({ value, className = '' }) => {
+  const safe = Math.max(0, Math.min(5, Number(value) || 0));
+  return (
+    <span className={`text-[#C98A3A] ${className}`}>{'★'.repeat(safe)}{'☆'.repeat(5 - safe)}</span>
+  );
+};
+
+const firstName = (name) => String(name || 'Patient').split(' ')[0] || 'Patient';
 
 /* ---------------- Video reel card (9:16, tap to play) ---------------- */
 function ReelCard({ reel, index }) {
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
   const [muted, setMuted] = useState(true);
+  const [videoError, setVideoError] = useState('');
 
-  const toggle = () => {
+  const toggle = async () => {
     const v = videoRef.current;
-    if (!v) return;
-    if (v.paused) { v.play().catch(() => {}); setPlaying(true); }
+    if (!v || videoError) return;
+    if (v.paused) {
+      try {
+        await v.play();
+        setPlaying(true);
+      } catch {
+        setPlaying(false);
+        setVideoError('This video could not be played.');
+      }
+    }
     else { v.pause(); setPlaying(false); }
   };
 
@@ -45,7 +59,14 @@ function ReelCard({ reel, index }) {
         preload="metadata"
         className="absolute inset-0 w-full h-full object-cover"
         onEnded={() => setPlaying(false)}
+        onError={() => setVideoError('This video is unavailable.')}
       />
+
+      {videoError && (
+        <div role="status" className="absolute inset-0 flex items-center justify-center bg-[#32100C]/90 p-4 text-center text-sm font-semibold text-white">
+          {videoError}
+        </div>
+      )}
 
       <div className="absolute top-3 left-3">
         <span className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#690A01]/75 backdrop-blur text-[10px] font-bold tracking-wider text-white uppercase">
@@ -71,7 +92,7 @@ function ReelCard({ reel, index }) {
 
       <div className="absolute bottom-0 inset-x-0 p-3 bg-gradient-to-t from-[#3A0D09] via-[#3A0D09]/75 to-transparent">
         <Stars value={reel.rating} className="text-xs" />
-        <p className="text-white font-bold text-sm mt-0.5 truncate">@{reel.patientName.split(' ')[0]}</p>
+        <p className="text-white font-bold text-sm mt-0.5 truncate">@{firstName(reel.patientName)}</p>
         <p className="text-[11px] text-[#F5DCD8] line-clamp-2 leading-snug">{reel.title}</p>
         <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-[#F6CFCB]/10 border border-[#F6CFCB]/30 text-[#F6CFCB] text-[10px] font-medium">
           {reel.treatment}
@@ -97,7 +118,7 @@ function WrittenReviewCard({ review, index }) {
       </p>
       <div>
         <Stars value={review.rating} className="text-xs" />
-        <p className="text-[#690A01] font-bold text-sm mt-1">@{review.patientName.split(' ')[0]}</p>
+        <p className="text-[#690A01] font-bold text-sm mt-1">@{firstName(review.patientName)}</p>
         <p className="text-[11px] text-[#6E6D7A]">{new Date(review.createdAt).toLocaleDateString('en-IN')}</p>
       </div>
     </motion.div>
@@ -105,28 +126,17 @@ function WrittenReviewCard({ review, index }) {
 }
 
 /* ---------------- Main section ---------------- */
-export default function ReelsSection({ profile }) {
-  const [reels, setReels] = useState([]);
-  const [reviews, setReviews] = useState([]);
+export default function ReelsSection({ profile, testimonials = [], reviews = [] }) {
   const [filter, setFilter] = useState('all');
   const [showReelModal, setShowReelModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const railRef = useRef(null);
 
-  useEffect(() => {
-    api.get('/reviews/testimonials', { params: { limit: 20 } })
-      .then(({ data }) => setReels((data.data || []).filter((t) => t.videoFile?.url)))
-      .catch(() => {});
-    if (profile?._id) {
-      api.get(`/reviews/doctor/${profile._id}`).then(({ data }) => setReviews(data.data || [])).catch(() => {});
-    }
-  }, [profile]);
-
   const scrollRail = (dir) => {
     railRef.current?.scrollBy({ left: dir * 320, behavior: 'smooth' });
   };
 
-  const mixed = [...reels, ...reviews].filter((i) =>
+  const mixed = [...testimonials.filter((t) => t.videoFile?.url), ...reviews].filter((i) =>
     filter === 'all' ? true : filter === 'reels' ? Boolean(i.videoFile?.url) : i.rating === Number(filter)
   );
 
@@ -240,4 +250,3 @@ export default function ReelsSection({ profile }) {
     </section>
   );
 }
-

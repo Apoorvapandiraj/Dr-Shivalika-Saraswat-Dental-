@@ -10,6 +10,29 @@ import SymptomChecker from '../components/SymptomChecker.jsx';
 import ScrollReveal from '../components/ScrollReveal.jsx';
 import api from '../services/api.js';
 
+// Same idea as App's boundary: one bad record from the API must never take
+// down the entire page. Each dynamic section renders in isolation.
+class SectionGuard extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { crashed: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { crashed: true };
+  }
+
+  componentDidCatch(error) {
+    // eslint-disable-next-line no-console
+    console.error(`[HomePage:${this.props.name || 'section'}]`, error);
+  }
+
+  render() {
+    if (this.state.crashed) return null;
+    return this.props.children;
+  }
+}
+
 const SPECIALIZATIONS = [
   ['🦷', 'Advanced Implantology'],
   ['✨', 'Cosmetic Dentistry & Smile Designing'],
@@ -159,13 +182,13 @@ export default function HomePage() {
       </ScrollReveal>
 
       <div id="technology" />
-      <TreatmentPlans profile={profile} />
-      <TimelineSection />
-      <BeforeAfterSlider cases={cases} />
-      <TestimonialsCarousel testimonials={testimonials} />
-      <SymptomChecker />
-      <BookingWidget profile={profile} profileError={profileError} onRetryProfile={loadProfile} />
-      <ReelsSection profile={profile} testimonials={testimonials} reviews={reviews} />
+      <SectionGuard name="plans"><TreatmentPlans profile={profile} /></SectionGuard>
+      <SectionGuard name="timeline"><TimelineSection /></SectionGuard>
+      <SectionGuard name="vault"><BeforeAfterSlider cases={cases} /></SectionGuard>
+      <SectionGuard name="testimonials"><TestimonialsCarousel testimonials={testimonials} /></SectionGuard>
+      <SectionGuard name="checker"><SymptomChecker /></SectionGuard>
+      <SectionGuard name="booking"><BookingWidget profile={profile} profileError={profileError} onRetryProfile={loadProfile} /></SectionGuard>
+      <SectionGuard name="reels"><ReelsSection profile={profile} testimonials={testimonials} reviews={reviews} /></SectionGuard>
 
       <footer className="border-t border-[#E8D7D1] bg-[#FBF9F8] py-10 text-center text-[#6E6D7A] text-sm">
         <p>© {new Date().getFullYear()} Dr. Shivalika Saraswat. All rights reserved.</p>
