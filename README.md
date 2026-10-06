@@ -40,17 +40,25 @@ cp .env.example .env
 npm run dev                 # http://localhost:3001
 ```
 
+## Production deployment (Vercel + Render)
+
+- Deploy the public site from the `client` directory on Vercel. Set `VITE_API_URL` to `https://dr-shivalika-saraswat-dental-1.onrender.com` (origin only, no trailing slash or `/api`). Vite variables are embedded at build time: redeploy after changing the value.
+- Deploy the API from the `server` directory on Render with `npm install` as the build command and `npm start` as the start command. Set `NODE_ENV=production`, `MONGODB_URI` (or `MONGO_URI`), `JWT_SECRET`, `REFRESH_TOKEN_SECRET` (both secrets must be at least 32 characters), and `FRONTEND_URL=https://dr-shivalika-saraswat-dental.vercel.app`. Render supplies `PORT`; the server listens on `0.0.0.0`. If MongoDB Atlas is used, allow Render connections in Atlas Network Access and percent-encode special characters in URI usernames/passwords.
+- For booking confirmation email, set either `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `EMAIL_FROM`, or Gmail's `GMAIL_USER`, `GMAIL_APP_PASSWORD`, and `EMAIL_FROM`. Set `CORS_ORIGIN` to the exact deployed frontend origin when using a custom domain.
+- Configure `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in Render before accepting image or video uploads. Production uploads intentionally return an error when Cloudinary is missing because Render's local filesystem is ephemeral. Existing media that was previously stored only on Render must be restored from a backup or uploaded again.
+- Set `VITE_RAZORPAY_KEY_ID` on Vercel for the public payment button and configure the corresponding Razorpay server credentials on Render if payment verification is enabled.
+
 ## Key API Endpoints
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| GET | `/api/health` | — | Health check (reports Mongo status) |
+| GET | `/api/health` | — | Health check (`status: "ok"` and Mongo status) |
 | POST | `/api/auth/register` \| `/login` \| `/refresh` | — | Auth (JWT access 15m + refresh 7d) |
 | POST | `/api/auth/send-otp` \| `/verify-otp` | — | OTP via email (Gmail) or SMS (Twilio) |
 | GET | `/api/profile` | — | Public doctor profile + services |
 | PUT | `/api/profile` | admin | Update profile (`manage_profile`) |
 | GET | `/api/bookings/availability?date=` | — | Real-time slot availability |
-| POST | `/api/bookings` | — | Create booking (OTP-verified, rate-limited) |
+| POST | `/api/bookings` | — | Create a booking (rate-limited, idempotency protected, email confirmation when configured) |
 | GET/PATCH | `/api/bookings` | admin | List / update bookings (`manage_bookings`) |
 | GET | `/api/reviews/doctor/:id` | — | Approved reviews |
 | POST | `/api/reviews` | — | Submit review (pending moderation) |
@@ -77,6 +85,7 @@ cd server && npm test       # smoke tests run against in-memory MongoDB
 ## Notes
 
 - Email/SMS providers fall back to console logging when credentials aren't configured (dev mode).
+- Render's free tier may sleep; the frontend waits up to 90 seconds and safely retries a timed-out booking once using an idempotency key.
 - OTPs are logged to the server console in dev mode — check the terminal when testing the booking flow.
-- Razorpay/Cloudinary integrations are stubbed in `models/Payment.js` / upload middleware; wire them via `ENV_CONFIG_AND_DEPLOYMENT.md` in `files/`.
+- Media uploads use Cloudinary in production; local disk is only used for development.
 - A React Three Fiber hero variant is available in `files/frontend_components.jsx`.

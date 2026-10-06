@@ -31,9 +31,13 @@ if (isProd) {
 
 const app = express();
 
-const configuredOrigins = (process.env.CORS_ORIGIN || '').split(',').map((origin) => origin.trim()).filter(Boolean);
+const configuredOrigins = [
+  ...(process.env.CORS_ORIGIN || '').split(','),
+  process.env.FRONTEND_URL || '',
+].map((origin) => origin.trim().replace(/\/+$/, '')).filter(Boolean);
 const allowedOrigins = new Set([
   'http://localhost:3000',
+  'http://localhost:5173',
   'http://localhost:3001',
   'https://drshivalikasaraswatdental.netlify.app',
   'https://admindr-shivalika.netlify.app',
@@ -54,6 +58,8 @@ const isAllowedOrigin = (origin) => {
 app.set('trust proxy', 1); // behind reverse proxies (Render/Heroku)
 app.use(
   helmet({
+    // Vercel serves the frontend separately; allow it to embed API-hosted media.
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
     // Strict CSP only in production — dev needs Vite HMR (ws:) & react-refresh (inline)
     contentSecurityPolicy: isProd
       ? {
@@ -82,7 +88,7 @@ app.use(
       if (isAllowedOrigin(origin)) return callback(null, true);
       return callback(new Error('Origin not allowed by CORS'));
     },
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   })
@@ -130,8 +136,8 @@ const server = http.createServer(app);
 const startServer = async () => {
   try {
     await connectDatabase();
-    server.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT} (${process.env.NODE_ENV || 'development'})`);
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on 0.0.0.0:${PORT} (${process.env.NODE_ENV || 'development'})`);
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);

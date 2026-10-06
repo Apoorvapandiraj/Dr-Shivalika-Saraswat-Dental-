@@ -22,7 +22,9 @@ export default function ReviewsSection({ profile }) {
 
   useEffect(() => {
     if (!profile?._id) return;
-    api.get(`/reviews/doctor/${profile._id}`).then(({ data }) => setReviews(data.data || [])).catch(() => {});
+    api.get(`/reviews/doctor/${profile._id}`)
+      .then(({ data }) => setReviews(data?.data || []))
+      .catch((error) => console.error('Failed to load reviews:', error));
   }, [profile]);
 
   const visible = filter ? reviews.filter((r) => r.rating === filter) : reviews;
@@ -37,6 +39,7 @@ export default function ReviewsSection({ profile }) {
       setShowForm(false);
       setForm({ patientName: '', patientEmail: '', rating: 5, comment: '' });
     } catch (err) {
+      console.error('Failed to submit review:', err);
       setMessage(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setBusy(false);

@@ -9,6 +9,20 @@ const mongoose = require('mongoose');
 let mongos;
 let app;
 
+const futureClinicDate = (daysAhead = 4) => {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(new Date());
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  const today = `${values.year}-${values.month}-${values.day}`;
+  const date = new Date(`${today}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + daysAhead);
+  return date.toISOString().slice(0, 10);
+};
+
 beforeAll(async () => {
   mongos = await MongoMemoryServer.create();
   await mongoose.connect(mongos.getUri());
@@ -27,7 +41,9 @@ describe('Health & Public API', () => {
     const res = await request(app).get('/api/health');
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+    expect(res.body.status).toBe('ok');
     expect(res.body.mongodb).toBe('connected');
+    expect(res.headers['cross-origin-resource-policy']).toBe('cross-origin');
   });
 
   test('Vercel git preview URLs are allowed by CORS', async () => {
@@ -37,6 +53,23 @@ describe('Health & Public API', () => {
 
     expect(res.status).toBe(200);
     expect(res.headers['access-control-allow-origin']).toBe('https://dr-shivalika-saraswat-dental-git-feature-branch.vercel.app');
+  });
+
+  test.each([
+    'https://dr-shivalika-saraswat-dental.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:3000',
+  ])('CORS preflight allows %s', async (origin) => {
+    const res = await request(app)
+      .options('/api/bookings')
+      .set('Origin', origin)
+      .set('Access-Control-Request-Method', 'POST')
+      .set('Access-Control-Request-Headers', 'content-type,authorization');
+
+    expect(res.status).toBe(204);
+    expect(res.headers['access-control-allow-origin']).toBe(origin);
+    expect(res.headers['access-control-allow-methods']).toContain('OPTIONS');
+    expect(res.headers['access-control-allow-headers']).toContain('Authorization');
   });
 
   test('GET /api/profile returns 404 before seeding', async () => {
@@ -106,21 +139,37 @@ describe('Booking flow', () => {
       specialization: 'Dentistry',
       experience: 10,
       bookingAdvanceNotice: 1,
-      services: [{ name: 'Consultation', price: 500, duration: 30 }],
+      bufferBetweenAppointments: 15,
+      services: [
+        { name: 'Consultation', price: 500, duration: 30 },
+        { name: 'Extended Procedure', price: 1500, duration: 60 },
+      ],
       workingHours: { start: '09:00', end: '18:00' },
     });
     doctorId = doctor._id.toString();
   });
 
   test('availability returns slots', async () => {
-    const date = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const date = futureClinicDate();
     const res = await request(app).get(`/api/bookings/availability?date=${date}`);
     expect(res.status).toBe(200);
     expect(res.body.data.slots.length).toBeGreaterThan(0);
+    expect(res.body.data.slots.find((slot) => slot.slot === '09:00').available).toBe(true);
+  });
+
+  test('availability rejects malformed dates and respects service duration', async () => {
+    const invalid = await request(app).get('/api/bookings/availability?date=2025-02-30');
+    expect(invalid.status).toBe(400);
+
+    const date = futureClinicDate();
+    const res = await request(app)
+      .get(`/api/bookings/availability?date=${date}&service=Extended%20Procedure`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.slots.find((slot) => slot.slot === '17:30').available).toBe(false);
   });
 
   test('booking fails with missing required fields', async () => {
-    const date = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const date = futureClinicDate();
     const res = await request(app).post('/api/bookings').send({
       doctorId,
       patientName: 'Test Patient',
@@ -134,7 +183,7 @@ describe('Booking flow', () => {
   });
 
   test('full booking flow succeeds instantly and blocks double-booking', async () => {
-    const date = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+    const date = futureClinicDate();
     const payload = {
       doctorId,
       patientName: 'Second Patient',
@@ -148,12 +197,47 @@ describe('Booking flow', () => {
     const res = await request(app).post('/api/bookings').send(payload);
     expect(res.status).toBe(201);
     expect(res.body.data.bookingReference).toMatch(/^BK-/);
+    expect(res.body.data.appointmentDate).toBe(`${date}T00:00:00.000Z`);
 
-    // Same slot again → duplicate key error surfaces as 400/500
     const res2 = await request(app)
       .post('/api/bookings')
       .send({ ...payload, patientEmail: 'patient3@test.com', patientPhone: '9876543213' });
-    expect([400, 500]).toContain(res2.status);
+    expect(res2.status).toBe(409);
+  });
+
+  test('booking blocks overlapping appointments inside the configured buffer', async () => {
+    const date = futureClinicDate();
+    const res = await request(app).post('/api/bookings').send({
+      doctorId,
+      patientName: 'Buffer Test Patient',
+      patientEmail: 'buffer@test.com',
+      patientPhone: '9876543214',
+      service: 'Consultation',
+      appointmentDate: date,
+      timeSlot: '11:30',
+    });
+    expect(res.status).toBe(409);
+  });
+
+  test('booking retries with the same idempotency key return the original booking', async () => {
+    const date = futureClinicDate(5);
+    const payload = {
+      idempotencyKey: 'retry-key-0123456789abcdef',
+      doctorId,
+      patientName: 'Retry Test Patient',
+      patientEmail: 'retry@test.com',
+      patientPhone: '9876543215',
+      service: 'Consultation',
+      appointmentDate: date,
+      timeSlot: '13:00',
+    };
+
+    const first = await request(app).post('/api/bookings').send(payload);
+    const retry = await request(app).post('/api/bookings').send(payload);
+
+    expect(first.status).toBe(201);
+    expect(retry.status).toBe(200);
+    expect(retry.body.data.bookingReference).toBe(first.body.data.bookingReference);
   });
 });
 

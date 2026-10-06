@@ -110,7 +110,8 @@ export default function HomePage() {
     try {
       const { data } = await api.get('/profile');
       setProfile(data.data);
-    } catch {
+    } catch (error) {
+      console.error('Failed to load clinic profile:', error);
       setProfile(null);
       setProfileError('Clinic services could not be loaded. Please try again.');
     }
@@ -121,23 +122,29 @@ export default function HomePage() {
     // Warm the Render backend immediately (cold start) instead of waiting for
     // per-section fetches — one cheap call keeps the dyno awake while the
     // visitor reads the hero, so booking/slots resolve fast when reached.
-    api.get('/health').catch(() => {});
+    api.get('/health').catch((error) => console.error('Failed to warm the API:', error));
     // Real Case Vault from the API; fall back to demo showcase if empty/unavailable
     api.get('/profile/case-vault')
       .then(({ data }) => {
         if (data.data?.length) setCases(data.data);
       })
-      .catch(() => {});
+      .catch((error) => console.error('Failed to load case studies:', error));
   }, []);
 
   useEffect(() => {
     if (!profile?._id) return;
     api.get('/reviews/testimonials', { params: { limit: 20 } })
       .then(({ data }) => setTestimonials(data.data || []))
-      .catch(() => setTestimonials([]));
+      .catch((error) => {
+        console.error('Failed to load testimonials:', error);
+        setTestimonials([]);
+      });
     api.get(`/reviews/doctor/${profile._id}`, { params: { limit: 20 } })
       .then(({ data }) => setReviews(data.data || []))
-      .catch(() => setReviews([]));
+      .catch((error) => {
+        console.error('Failed to load reviews:', error);
+        setReviews([]);
+      });
   }, [profile?._id]);
 
   const stats = profile

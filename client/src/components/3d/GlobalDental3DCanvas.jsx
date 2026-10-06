@@ -35,8 +35,8 @@ class CanvasErrorBoundary extends Component {
     return { hasError: true };
   }
 
-  componentDidCatch() {
-    // Swallow silently — the fallback layer below renders instead.
+  componentDidCatch(error) {
+    console.error('[GlobalDental3DCanvas]', error);
   }
 
   render() {
@@ -99,6 +99,7 @@ export default function GlobalDental3DCanvas() {
                 height: '100%',
                 display: 'block',
                 background: 'transparent',
+                pointerEvents: 'none',
               }}
             >
               <PerspectiveCamera makeDefault position={[0.2, 0.2, 8.5]} fov={30} />

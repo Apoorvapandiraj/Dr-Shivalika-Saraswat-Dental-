@@ -3,6 +3,8 @@ const mongoose = require('mongoose');
 const bookingSchema = new mongoose.Schema(
   {
     bookingReference: { type: String, unique: true },
+    idempotencyKey: { type: String, trim: true },
+    confirmationEmailSent: { type: Boolean, default: false },
     doctorId: { type: mongoose.Schema.Types.ObjectId, ref: 'DoctorProfile', required: true, index: true },
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 
@@ -60,5 +62,6 @@ bookingSchema.index(
   { unique: true, partialFilterExpression: { status: 'confirmed' }, name: 'unique_active_slot_confirmed' }
 );
 bookingSchema.index({ patientEmail: 1 });
+bookingSchema.index({ idempotencyKey: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('Booking', bookingSchema);

@@ -88,9 +88,11 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [reference, setReference] = useState('');
+  const [emailSent, setEmailSent] = useState(false);
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [payState, setPayState] = useState('idle');
   const profileRef = useRef(profile);
+  const bookingKey = useRef(null);
   profileRef.current = profile;
 
   useEffect(() => {
@@ -138,8 +140,9 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
         setSlots(data.data.slots || []);
         setAvailabilityState('loaded');
       })
-      .catch(() => {
+      .catch((error) => {
         if (!active) return;
+        console.error('Failed to load appointment availability:', error);
         setSlots([]);
         setAvailabilityState('error');
       });
@@ -155,11 +158,14 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
   const next = () => setStep((s) => Math.min(s + 1, 2));
   const back = () => { setError(''); setStep((s) => Math.max(s - 1, 0)); };
 
-  const confirmBooking = async () => {
+  const confirmBooking = async (event) => {
+    event?.preventDefault();
+    if (!bookingKey.current) bookingKey.current = window.crypto.randomUUID();
     setError('');
     setBusy(true);
     try {
-      const { data } = await api.post('/bookings', {
+      const payload = {
+        idempotencyKey: bookingKey.current,
         doctorId: profile?._id,
         patientName: form.patientName,
         patientEmail: form.patientEmail,
@@ -168,8 +174,18 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
         appointmentDate: selectedDate,
         timeSlot: form.timeSlot,
         notes: form.notes,
-      });
+      };
+      let response;
+      try {
+        response = await api.post('/bookings', payload);
+      } catch (error) {
+        if (error.response || !['ECONNABORTED', 'ERR_NETWORK'].includes(error.code)) throw error;
+        await new Promise((resolve) => window.setTimeout(resolve, 1500));
+        response = await api.post('/bookings', payload);
+      }
+      const { data } = response;
       setReference(data.data.bookingReference);
+      setEmailSent(Boolean(data.data.emailSent));
       setConfirmedBooking({
         reference: data.data.bookingReference,
         service: form.service,
@@ -178,10 +194,17 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
         duration: selectedService?.duration || 30,
         price: selectedService?.price || 0,
       });
+      bookingKey.current = null;
       setPayState('idle');
       next();
     } catch (e) {
-      setError(e.response?.data?.message || 'Booking failed');
+      console.error('Failed to create booking:', e);
+      setError(
+        e.response?.data?.message
+        || (e.code === 'ECONNABORTED'
+          ? 'The server took too long to respond. Retry safely; this request cannot create a duplicate booking.'
+          : 'Booking failed. Please try again.')
+      );
     } finally {
       setBusy(false);
     }
@@ -312,7 +335,7 @@ export default function BookingWidget({ profile = null, profileError = '', onRet
                 >
                   {step === 0 && <ServiceStep profile={profile} profileError={profileError} onRetryProfile={onRetryProfile} dates={dates} selectedDate={selectedDate} setSelectedDate={setSelectedDate} slots={slots} availabilityState={availabilityState} onRetryAvailability={() => setAvailabilityAttempt((n) => n + 1)} form={form} setForm={setForm} next={next} />}
                   {step === 1 && <DetailsStep form={form} set={set} selectedDate={selectedDate} selectedService={selectedService} back={back} confirmBooking={confirmBooking} busy={busy} />}
-                  {step === 2 && <DoneStep booking={confirmedBooking} payState={payState} onPay={payOnline} onDownload={downloadICS} />}
+                  {step === 2 && <DoneStep booking={confirmedBooking} emailSent={emailSent} payState={payState} onPay={payOnline} onDownload={downloadICS} />}
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -566,20 +589,20 @@ function DetailsStep({ form, set, selectedDate, selectedService, back, confirmBo
     /^[0-9]{10}$/.test(form.patientPhone);
 
   return (
-    <div className="space-y-5">
+    <form onSubmit={confirmBooking} className="space-y-5">
       {stepHead(2, 'Your Details', 'Where should we confirm your appointment?')}
 
       <div className="relative">
         <User className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#C0866F]" size={18} />
-        <input value={form.patientName} onChange={set('patientName')} className={`${inputCls} pl-11`} placeholder="Your full name" />
+        <input required minLength={2} value={form.patientName} onChange={set('patientName')} className={`${inputCls} pl-11`} placeholder="Your full name" />
       </div>
       <div className="relative">
         <Mail className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#C0866F]" size={18} />
-        <input type="email" value={form.patientEmail} onChange={set('patientEmail')} className={`${inputCls} pl-11`} placeholder="your@email.com" />
+        <input required type="email" value={form.patientEmail} onChange={set('patientEmail')} className={`${inputCls} pl-11`} placeholder="your@email.com" />
       </div>
       <div className="relative">
         <Phone className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[#C0866F]" size={18} />
-        <input value={form.patientPhone} onChange={set('patientPhone')} className={`${inputCls} pl-11`} placeholder="9876543210" maxLength="10" />
+        <input required inputMode="numeric" pattern="[0-9]{10}" value={form.patientPhone} onChange={set('patientPhone')} className={`${inputCls} pl-11`} placeholder="9876543210" maxLength="10" />
       </div>
       <div className="relative">
         <MessageSquare className="pointer-events-none absolute left-4 top-4 text-[#C0866F]" size={18} />
@@ -610,17 +633,17 @@ function DetailsStep({ form, set, selectedDate, selectedService, back, confirmBo
       </motion.div>
 
       <div className="flex gap-3 pt-2">
-        <button onClick={back} className="btn-ghost flex-1">
+        <button type="button" onClick={back} className="btn-ghost flex-1">
           <ChevronLeft size={15} /> Back
         </button>
-        <button onClick={confirmBooking} disabled={busy || !valid} className="btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-40">
+        <button type="submit" disabled={busy || !valid} className="btn-primary flex-1 disabled:cursor-not-allowed disabled:opacity-40">
           <CheckCircle size={15} /> {busy ? 'Confirming…' : 'Confirm Booking'}
         </button>
       </div>
-    </div>
+    </form>
   );
 }
-function DoneStep({ booking, payState, onPay, onDownload }) {
+function DoneStep({ booking, emailSent, payState, onPay, onDownload }) {
   if (!booking) return null;
   const colors = ['#D33616', '#C98A3A', '#CF8976', '#F5B8A3'];
   return (
@@ -664,6 +687,9 @@ function DoneStep({ booking, payState, onPay, onDownload }) {
       <h3 className="mb-2 text-3xl font-black tracking-[-0.06em] text-[#690A01]">Booking Confirmed!</h3>
       <p className="text-sm text-[#8E7D7A]">
         Reference <strong className="tracking-[0.22em] text-[#D33616]">{booking.reference}</strong>
+      </p>
+      <p className="mt-2 text-sm text-[#8E7D7A]">
+        {emailSent ? 'Confirmation email sent.' : 'Email confirmation could not be sent. Save your booking reference.'}
       </p>
 
       {/* ── Summary ticket ── */}

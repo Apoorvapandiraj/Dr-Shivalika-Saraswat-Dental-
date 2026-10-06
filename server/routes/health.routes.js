@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 // Health check endpoint
 router.get('/', (req, res) => {
   res.json({
+    status: 'ok',
     success: true,
     message: 'Server is running',
     mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',

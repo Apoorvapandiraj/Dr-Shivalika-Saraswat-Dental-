@@ -5,13 +5,24 @@ const { AppError, asyncHandler } = require('../middleware/error');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const { cloudinary, isConfigured: hasCloudinary, uploadBuffer } = require('../config/cloudinary');
 
 const VIDEO_MIMES = { 'video/mp4': 'mp4', 'video/webm': 'webm', 'video/quicktime': 'mov' };
 const REELS_DIR = path.join(__dirname, '..', 'uploads', 'testimonials');
 
-// Save an uploaded reel to local disk with a randomized name (never trust client filenames).
-// Swap this for a Cloudinary stream upload in production (see files/ENV_CONFIG_AND_DEPLOYMENT.md).
-const saveReelFile = (file) => {
+// Use durable storage in production; randomized local filenames are for development only.
+const saveReelFile = async (file) => {
+  if (hasCloudinary) {
+    const uploaded = await uploadBuffer(file.buffer, {
+      folder: 'dr-shivalika/testimonials',
+      resource_type: 'video',
+    });
+    return { url: uploaded.secure_url, publicId: uploaded.public_id, format: uploaded.format };
+  }
+  if (process.env.NODE_ENV === 'production') {
+    throw new AppError('Video uploads require Cloudinary configuration in production', 503);
+  }
+
   fs.mkdirSync(REELS_DIR, { recursive: true });
   const ext = VIDEO_MIMES[file.mimetype];
   const filename = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
@@ -20,10 +31,14 @@ const saveReelFile = (file) => {
   return { url: `/uploads/testimonials/${filename}`, publicId: filename, format: ext };
 };
 
-const deleteReelFile = (publicId) => {
+const deleteReelFile = async (publicId) => {
   if (!publicId) return;
-  const filepath = path.join(REELS_DIR, path.basename(publicId)); // basename: block path traversal
-  fs.promises.unlink(filepath).catch(() => {});
+  if (hasCloudinary && publicId.includes('/')) {
+    await cloudinary.uploader.destroy(publicId, { resource_type: 'video' });
+    return;
+  }
+  const filepath = path.join(REELS_DIR, path.basename(publicId));
+  await fs.promises.unlink(filepath);
 };
 
 const recalcDoctorRating = async (doctorId) => {
@@ -180,6 +195,7 @@ exports.submitTestimonial = asyncHandler(async (req, res) => {
   const doctor = await DoctorProfile.findOne({ _id: doctorId, deletedAt: null });
   if (!doctor) throw new AppError('Doctor profile not found', 404);
 
+  const videoFile = req.file ? await saveReelFile(req.file) : undefined;
   const testimonial = await Testimonial.create({
     doctorId,
     patientName: patientName.trim(),
@@ -189,7 +205,7 @@ exports.submitTestimonial = asyncHandler(async (req, res) => {
     description: (description || title || 'Video testimonial').trim().slice(0, 3000),
     rating: parseInt(rating, 10),
     treatment: treatment || 'General Treatment',
-    videoFile: req.file ? saveReelFile(req.file) : undefined,
+    videoFile,
     videoFormat: req.file ? 'Reel' : 'Testimonial',
   });
 
@@ -221,6 +237,6 @@ exports.rejectTestimonial = asyncHandler(async (req, res) => {
   );
   if (!testimonial) throw new AppError('Testimonial not found', 404);
   await recalcDoctorRating(testimonial.doctorId);
-  if (testimonial.videoFile?.publicId) deleteReelFile(testimonial.videoFile.publicId);
+  if (testimonial.videoFile?.publicId) await deleteReelFile(testimonial.videoFile.publicId);
   res.json({ success: true, message: 'Testimonial rejected and video removed', data: testimonial });
 });

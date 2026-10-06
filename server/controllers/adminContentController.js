@@ -5,33 +5,18 @@ const { upload } = require('../middleware/upload');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const cloudinary = require('cloudinary').v2;
+const { cloudinary, isConfigured: hasCloudinary, uploadBuffer } = require('../config/cloudinary');
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const CONTENT_DIR = path.join(__dirname, '..', 'uploads', 'content');
 
-const hasCloudinary = Boolean(
-  process.env.CLOUDINARY_CLOUD_NAME
-  && process.env.CLOUDINARY_API_KEY
-  && process.env.CLOUDINARY_API_SECRET
-);
-
-if (hasCloudinary) {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET,
-  });
-}
-
-const saveImageFile = (file, req) => {
+const saveImageFile = (file) => {
   fs.mkdirSync(CONTENT_DIR, { recursive: true });
   const ext = file.mimetype.includes('png') ? 'png' : file.mimetype.includes('webp') ? 'webp' : 'jpg';
   const filename = `${Date.now()}-${crypto.randomUUID()}.${ext}`;
   const filepath = path.join(CONTENT_DIR, filename);
   fs.writeFileSync(filepath, file.buffer);
-  const origin = `${req.protocol}://${req.get('host')}`;
-  return { url: `${origin}/uploads/content/${filename}`, publicId: filename };
+  return { url: `/uploads/content/${filename}`, publicId: filename };
 };
 
 exports.getContentDashboard = asyncHandler(async (req, res) => {
@@ -84,16 +69,16 @@ exports.uploadContentImage = asyncHandler(async (req, res) => {
 
   let image;
   if (hasCloudinary) {
-    const result = await new Promise((resolve, reject) => {
-      const stream = cloudinary.uploader.upload_stream(
-        { folder: 'dr-shivalika/content', resource_type: 'image' },
-        (error, uploaded) => (error ? reject(error) : resolve(uploaded))
-      );
-      stream.end(file.buffer);
+    const result = await uploadBuffer(file.buffer, {
+      folder: 'dr-shivalika/content',
+      resource_type: 'image',
     });
     image = { url: result.secure_url, publicId: result.public_id };
   } else {
-    image = saveImageFile(file, req);
+    if (process.env.NODE_ENV === 'production') {
+      throw new AppError('Image uploads require Cloudinary configuration in production', 503);
+    }
+    image = saveImageFile(file);
   }
   res.status(201).json({ success: true, message: 'Image uploaded', data: image });
 });

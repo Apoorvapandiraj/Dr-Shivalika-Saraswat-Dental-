@@ -37,7 +37,9 @@ export default function ChatBot() {
 
   useEffect(() => {
     if (!open) return undefined;
-    api.get('/profile').then(({ data }) => setProfile(data.data)).catch(() => {});
+    api.get('/profile')
+      .then(({ data }) => setProfile(data?.data || null))
+      .catch((error) => console.error('Failed to load chat profile:', error));
     const t = setTimeout(() => {
       addMsg('bot', "Hi! 👋 Welcome to Dr. Shivalika Saraswat's dental clinic.\nI'm Mira, your care assistant — I can share treatment prices, working hours and help you book an appointment in under a minute.\n\nMay I have your name, please? 😊");
     }, 700);
@@ -97,8 +99,8 @@ export default function ChatBot() {
         interest: snapshot.interest,
         note: snapshot.note,
       });
-    } catch {
-      /* silent — rate limit/offline; phone number still visible to staff via chat */
+    } catch (error) {
+      console.error('Failed to submit chat lead:', error);
     }
   };
 

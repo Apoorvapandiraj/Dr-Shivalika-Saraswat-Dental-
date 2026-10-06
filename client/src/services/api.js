@@ -1,22 +1,19 @@
 import axios from 'axios';
 
-const RENDER_API_URL = 'https://dr-shivalika-saraswat-dental-1.onrender.com/api';
+const DEFAULT_API_ORIGIN = 'https://dr-shivalika-saraswat-dental-1.onrender.com';
 
-// NOTE: Vite bakes VITE_API_URL at build time. Local .env files contain
-// VITE_API_URL=/api (dev proxy). A production build made locally would
-// otherwise bake "/api" in and call the static host's /api (which returns
-// index.html) — so treat a bare "/api" as dev-only and fall back to Render.
 const RAW_URL = (import.meta.env.VITE_API_URL || '').trim();
-const API_BASE_URL =
-  RAW_URL && RAW_URL !== '/api'
-    ? RAW_URL
-    : import.meta.env.PROD
-      ? RENDER_API_URL
-      : '/api';
+const configuredPath = RAW_URL.replace(/\/+$/, '');
+const API_ORIGIN = configuredPath && configuredPath !== '/api'
+  ? configuredPath.replace(/\/api$/i, '')
+  : import.meta.env.PROD
+    ? DEFAULT_API_ORIGIN
+    : '';
+const API_BASE_URL = API_ORIGIN ? `${API_ORIGIN}/api` : '/api';
 
 // API origin (no trailing /api) — used to resolve relative media URLs
 // (e.g. /uploads/testimonials/x.mp4) served by the backend.
-export const API_ORIGIN = API_BASE_URL.replace(/\/api\/?$/, '') || RENDER_API_URL.replace(/\/api\/?$/, '');
+export { API_ORIGIN };
 
 export const mediaUrl = (u) => {
   if (!u) return '';
@@ -29,7 +26,7 @@ const api = axios.create({
   // Render free tier cold-starts can take 30-60s on the first request after
   // idle. A short timeout turns that into a permanent-looking "nothing works"
   // state on the live site. Keep it generous for GETs (retried below).
-  timeout: 60000,
+  timeout: 90000,
 });
 
 // Attach JWT automatically if present
@@ -57,7 +54,8 @@ const refreshAuth = async (failedRequest) => {
     if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
     original.headers.Authorization = `Bearer ${data.data.accessToken}`;
     return api(original);
-  } catch {
+  } catch (error) {
+    console.error('Authentication refresh failed:', error);
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     return null;
@@ -69,6 +67,12 @@ api.interceptors.response.use(
   (res) => res,
   async (error) => {
     const original = error.config || {};
+    console.error('API request failed:', {
+      url: original.url,
+      method: original.method,
+      status: error.response?.status,
+      message: error.message,
+    });
 
     // 1) Retry idempotent GETs once on network failure / timeout / 5xx.
     // This is what makes the live site survive a Render cold start: the first

@@ -106,6 +106,7 @@ export function ReelModal({ profileId, onClose }) {
       await api.post('/reviews/testimonials', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
       setDone(true);
     } catch (e) {
+      console.error('Failed to upload testimonial video:', e);
       setError(e.response?.data?.message || 'Upload failed — please try again');
     } finally {
       setBusy(false);
@@ -217,6 +218,7 @@ export function ReviewModal({ profileId, onClose }) {
       await api.post('/reviews', { doctorId: profileId, ...form });
       setDone(true);
     } catch (err) {
+      console.error('Failed to submit review:', err);
       setError(err.response?.data?.message || 'Failed to submit review');
     } finally {
       setBusy(false);
