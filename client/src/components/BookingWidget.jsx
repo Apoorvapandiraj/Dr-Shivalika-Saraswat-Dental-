@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Activity, ArrowRight, CalendarCheck, CalendarDays, CalendarPlus,
@@ -9,6 +9,16 @@ import {
 import api from '../services/api.js';
 
 const STEPS = ['Service', 'Details', 'Done'];
+const clinicDateString = (date) => {
+  const parts = new Intl.DateTimeFormat('en', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+  return `${values.year}-${values.month}-${values.day}`;
+};
 const inputCls = 'w-full rounded-2xl border border-[#F1D7D1] bg-white/90 px-4 py-3.5 text-[15px] text-[#1C1B1F] placeholder:text-[#8E7D7A] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] focus:border-[#D33616] focus:outline-none focus:ring-4 focus:ring-[#D33616]/12 transition-all';
 const numCls = 'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#D33616] to-[#B5210A] text-sm font-extrabold text-white shadow-[0_8px_18px_rgba(211,54,22,0.28)]';
 const stepHead = (num, title, sub) => (
@@ -22,18 +32,23 @@ const stepHead = (num, title, sub) => (
 );
 
 function buildICS({ reference, service, date, timeSlot, duration }) {
-  const [h, m] = (timeSlot || '09:00').split(':').map(Number);
-  const start = new Date(`${date}T00:00:00`);
-  start.setHours(h, m, 0, 0);
+  const [year, month, day] = date.split('-').map(Number);
+  const [hours, minutes] = (timeSlot || '09:00').split(':').map(Number);
+  const start = new Date(Date.UTC(year, month - 1, day, hours, minutes));
   const end = new Date(start.getTime() + (duration || 30) * 60000);
-  const fmt = (d) => d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+  const fmtDate = (value) => value.toISOString().slice(0, 10).replace(/-/g, '');
+  const fmtTime = (value) => value.toISOString().slice(11, 19).replace(/:/g, '');
+  const fmtUtc = (value) => value.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
   return [
     'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//DrShivalika//Booking//EN',
+    'BEGIN:VTIMEZONE', 'TZID:Asia/Kolkata', 'BEGIN:STANDARD',
+    'DTSTART:19700101T000000', 'TZOFFSETFROM:+0530', 'TZOFFSETTO:+0530', 'TZNAME:IST',
+    'END:STANDARD', 'END:VTIMEZONE',
     'BEGIN:VEVENT',
     `UID:${reference}@drshivalika`,
-    `DTSTAMP:${fmt(new Date())}`,
-    `DTSTART:${fmt(start)}`,
-    `DTEND:${fmt(end)}`,
+    `DTSTAMP:${fmtUtc(new Date())}`,
+    `DTSTART;TZID=Asia/Kolkata:${fmtDate(start)}T${fmtTime(start)}`,
+    `DTEND;TZID=Asia/Kolkata:${fmtDate(end)}T${fmtTime(end)}`,
     `SUMMARY:Dental Appointment — ${service}`,
     `DESCRIPTION:Booking reference ${reference}. Please arrive 10 minutes early.`,
     'LOCATION:Dr. Shivalika Saraswat Dental Clinic',
@@ -62,24 +77,27 @@ function loadRazorpay() {
   });
 }
 
-export default function BookingWidget() {
+export default function BookingWidget({ profile = null, profileError = '', onRetryProfile }) {
   const [step, setStep] = useState(0);
-  const [profile, setProfile] = useState(null);
   const [dates, setDates] = useState([]);
   const [selectedDate, setSelectedDate] = useState('');
   const [slots, setSlots] = useState([]);
+  const [availabilityState, setAvailabilityState] = useState('idle');
+  const [availabilityAttempt, setAvailabilityAttempt] = useState(0);
   const [form, setForm] = useState({ service: '', timeSlot: '', patientName: '', patientEmail: '', patientPhone: '', notes: '' });
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [reference, setReference] = useState('');
   const [confirmedBooking, setConfirmedBooking] = useState(null);
   const [payState, setPayState] = useState('idle');
+  const profileRef = useRef(profile);
+  profileRef.current = profile;
 
   useEffect(() => {
-    api.get('/profile').then(({ data }) => setProfile(data.data)).catch(() => setProfile(null));
+    const clinicToday = new Date(`${clinicDateString(new Date())}T00:00:00.000Z`);
     const days = [...Array(14)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() + i);
+      const d = new Date(clinicToday);
+      d.setUTCDate(d.getUTCDate() + i);
       return d;
     });
     setDates(days);
@@ -87,7 +105,16 @@ export default function BookingWidget() {
 
     const prefill = (e) => {
       const { service } = e.detail || {};
-      if (service) setForm((f) => ({ ...f, service, timeSlot: '' }));
+      // Only accept services that exist in the loaded profile — otherwise a
+      // stale/cached prefill (e.g. renamed treatment) would leave the widget
+      // showing an unselectable ghost service with no slots.
+      setForm((f) => {
+        if (!service) return f;
+        if (profileRef.current && !(profileRef.current.services || []).some((s) => s.name === service)) {
+          return f;
+        }
+        return { ...f, service, timeSlot: '' };
+      });
       setStep(0);
     };
     window.addEventListener('booking:prefill', prefill);
@@ -95,12 +122,29 @@ export default function BookingWidget() {
   }, []);
 
   useEffect(() => {
+    // NOTE: fetch availability even before profile arrives — the server only
+    // needs the date (service only refines duration-aware overlap). Gating on
+    // `profile` deadlocks the whole section on the live site whenever the
+    // first /profile call is slow (Render cold start).
     if (!selectedDate || step >= 3) return;
+    let active = true;
     setSlots([]);
-    api.get(`/bookings/availability?date=${selectedDate}`)
-      .then(({ data }) => setSlots(data.data.slots || []))
-      .catch(() => setSlots([]));
-  }, [selectedDate, step]);
+    setAvailabilityState('loading');
+    api.get('/bookings/availability', {
+      params: { date: selectedDate, service: form.service || undefined },
+    })
+      .then(({ data }) => {
+        if (!active) return;
+        setSlots(data.data.slots || []);
+        setAvailabilityState('loaded');
+      })
+      .catch(() => {
+        if (!active) return;
+        setSlots([]);
+        setAvailabilityState('error');
+      });
+    return () => { active = false; };
+  }, [selectedDate, step, form.service, profile, availabilityAttempt]);
 
   const selectedService = useMemo(
     () => profile?.services?.find((s) => s.name === form.service),
@@ -266,7 +310,7 @@ export default function BookingWidget() {
                   exit={{ opacity: 0, x: -26 }}
                   transition={{ duration: 0.28, ease: 'easeOut' }}
                 >
-                  {step === 0 && <ServiceStep profile={profile} dates={dates} selectedDate={selectedDate} setSelectedDate={setSelectedDate} slots={slots} form={form} setForm={setForm} next={next} />}
+                  {step === 0 && <ServiceStep profile={profile} profileError={profileError} onRetryProfile={onRetryProfile} dates={dates} selectedDate={selectedDate} setSelectedDate={setSelectedDate} slots={slots} availabilityState={availabilityState} onRetryAvailability={() => setAvailabilityAttempt((n) => n + 1)} form={form} setForm={setForm} next={next} />}
                   {step === 1 && <DetailsStep form={form} set={set} selectedDate={selectedDate} selectedService={selectedService} back={back} confirmBooking={confirmBooking} busy={busy} />}
                   {step === 2 && <DoneStep booking={confirmedBooking} payState={payState} onPay={payOnline} onDownload={downloadICS} />}
                 </motion.div>
@@ -348,7 +392,7 @@ function StepIndicator({ step }) {
     </div>
   );
 }
-function ServiceStep({ profile, dates, selectedDate, setSelectedDate, slots, form, setForm, next }) {
+function ServiceStep({ profile, profileError, onRetryProfile, dates, selectedDate, setSelectedDate, slots, availabilityState, onRetryAvailability, form, setForm, next }) {
   const serviceIcons = {
     'Dental Consultation': Stethoscope,
     'Teeth Cleaning & Polishing': Sparkles,
@@ -417,7 +461,16 @@ function ServiceStep({ profile, dates, selectedDate, setSelectedDate, slots, for
             </motion.button>
           );
         })}
-        {!profile && <p className="col-span-full py-6 text-center text-sm text-[#8E7D7A]">Loading services…</p>}
+        {!profile && (
+          <div className="col-span-full py-6 text-center text-sm text-[#8E7D7A]">
+            {profileError || 'Loading services…'}
+            {profileError && onRetryProfile && (
+              <button type="button" onClick={onRetryProfile} className="ml-2 font-semibold text-[#D33616] underline">
+                Retry
+              </button>
+            )}
+          </div>
+        )}
       </div>
 {/* ── 2 · Pick a date ── */}
       {stepHead(2, 'Pick a Date', 'Choose your preferred day')}
@@ -436,18 +489,35 @@ function ServiceStep({ profile, dates, selectedDate, setSelectedDate, slots, for
               onClick={() => setSelectedDate(val)}
               className={`flex flex-col items-center rounded-2xl border py-2.5 transition-all duration-300 ${active ? 'border-[#D33616] bg-gradient-to-br from-[#D33616] to-[#B5210A] text-white shadow-[0_14px_28px_rgba(211,54,22,0.3)]' : 'border-[#F0E3DF] bg-white/75 text-[#403E45] hover:-translate-y-0.5 hover:border-[#D33616]/35'}`}
             >
-              <span className={`text-[10px] font-bold uppercase tracking-[0.14em] ${active ? 'text-white/85' : 'text-[#B39A92]'}`}>{dayLabels[d.getDay()]}</span>
-              <span className="mt-0.5 text-lg font-extrabold leading-none">{d.getDate()}</span>
-              <span className={`mt-0.5 text-[9px] font-semibold uppercase ${active ? 'text-white/75' : 'text-[#C4B4AD]'}`}>{d.toLocaleString('en-IN', { month: 'short' })}</span>
+              <span className={`text-[10px] font-bold uppercase tracking-[0.14em] ${active ? 'text-white/85' : 'text-[#B39A92]'}`}>{dayLabels[d.getUTCDay()]}</span>
+              <span className="mt-0.5 text-lg font-extrabold leading-none">{d.getUTCDate()}</span>
+              <span className={`mt-0.5 text-[9px] font-semibold uppercase ${active ? 'text-white/75' : 'text-[#C4B4AD]'}`}>{d.toLocaleString('en-IN', { month: 'short', timeZone: 'UTC' })}</span>
             </motion.button>
           );
         })}
       </div>
 
       {/* ── 3 · Available slots ── */}
-      {stepHead(3, 'Available Slots', slots.filter((s) => s.available).length ? `${slots.filter((s) => s.available).length} open slots` : 'Fetching availability…')}
+      {stepHead(3, 'Available Slots', availabilityState === 'loading'
+        ? 'Checking availability…'
+        : availabilityState === 'error'
+          ? 'Availability could not be loaded'
+          : slots.filter((s) => s.available).length
+            ? `${slots.filter((s) => s.available).length} open slots`
+            : 'No slots available for this date')}
+      {availabilityState === 'error' ? (
+        <p className="text-sm text-red-700">
+          Please check your connection, then{' '}
+          <button type="button" onClick={onRetryAvailability} className="font-semibold underline">
+            retry availability
+          </button>
+          .
+        </p>
+      ) : availabilityState === 'loaded' && !slots.length ? (
+        <p className="text-sm text-[#8E7D7A]">There are no appointments available on this date.</p>
+      ) : (
       <div className="grid grid-cols-4 gap-2.5 sm:grid-cols-6">
-        {(slots.length ? slots : Array.from({ length: 12 }, () => null)).map((s, i) => {
+        {(availabilityState === 'loading' ? Array.from({ length: 12 }, () => null) : slots).map((s, i) => {
           if (!s) return <div key={i} className="animate-pulse rounded-2xl bg-[#F4EAE6] py-3.5" />;
           const selected = form.timeSlot === s.slot;
           return (
@@ -475,6 +545,7 @@ function ServiceStep({ profile, dates, selectedDate, setSelectedDate, slots, for
           );
         })}
       </div>
+      )}
 
       <motion.button
         whileHover={{ scale: 1.02 }}

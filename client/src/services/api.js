@@ -26,7 +26,10 @@ export const mediaUrl = (u) => {
 
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  // Render free tier cold-starts can take 30-60s on the first request after
+  // idle. A short timeout turns that into a permanent-looking "nothing works"
+  // state on the live site. Keep it generous for GETs (retried below).
+  timeout: 60000,
 });
 
 // Attach JWT automatically if present
@@ -39,28 +42,54 @@ api.interceptors.request.use((config) => {
 // Single-flight refresh — concurrent 401s share one refresh call
 let refreshPromise = null;
 
-// Refresh flow on 401 (handles server-side refresh-token rotation)
+const refreshAuth = async (failedRequest) => {
+  const original = failedRequest;
+  if (original._retry || !localStorage.getItem('refreshToken')) return null;
+  original._retry = true;
+  try {
+    if (!refreshPromise) {
+      refreshPromise = axios
+        .post(`${API_BASE_URL}/auth/refresh`, { refreshToken: localStorage.getItem('refreshToken') })
+        .finally(() => { refreshPromise = null; });
+    }
+    const { data } = await refreshPromise;
+    localStorage.setItem('accessToken', data.data.accessToken);
+    if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
+    original.headers.Authorization = `Bearer ${data.data.accessToken}`;
+    return api(original);
+  } catch {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    return null;
+  }
+};
+
+// Single response interceptor: cold-start retry for GETs + token refresh on 401
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const original = error.config;
-    if (error.response?.status === 401 && !original._retry && localStorage.getItem('refreshToken')) {
-      original._retry = true;
-      try {
-        if (!refreshPromise) {
-          refreshPromise = axios
-            .post(`${API_BASE_URL}/auth/refresh`, { refreshToken: localStorage.getItem('refreshToken') })
-            .finally(() => { refreshPromise = null; });
-        }
-        const { data } = await refreshPromise;
-        localStorage.setItem('accessToken', data.data.accessToken);
-        if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
-        original.headers.Authorization = `Bearer ${data.data.accessToken}`;
-        return api(original);
-      } catch {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      }
+    const original = error.config || {};
+
+    // 1) Retry idempotent GETs once on network failure / timeout / 5xx.
+    // This is what makes the live site survive a Render cold start: the first
+    // request wakes the server (~30-60s), the retry then succeeds instead of
+    // leaving the page permanently empty.
+    const isGet = (original.method || 'get').toLowerCase() === 'get';
+    const retryable =
+      isGet &&
+      !original._getRetried &&
+      (!error.response || error.response.status >= 500 || error.code === 'ECONNABORTED');
+    if (retryable) {
+      original._getRetried = true;
+      // Small backoff so a waking server has time to come up
+      await new Promise((r) => setTimeout(r, 1500));
+      return api(original);
+    }
+
+    // 2) Refresh flow on 401 (handles server-side refresh-token rotation)
+    if (error.response?.status === 401) {
+      const retried = await refreshAuth(original);
+      if (retried) return retried;
     }
     return Promise.reject(error);
   }

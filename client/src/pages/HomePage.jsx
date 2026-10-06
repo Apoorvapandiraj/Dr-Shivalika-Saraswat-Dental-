@@ -77,10 +77,28 @@ const DEMO_CASES = [
 
 export default function HomePage() {
   const [profile, setProfile] = useState(null);
+  const [profileError, setProfileError] = useState('');
   const [cases, setCases] = useState(DEMO_CASES);
+  const [testimonials, setTestimonials] = useState([]);
+  const [reviews, setReviews] = useState([]);
+
+  const loadProfile = async () => {
+    setProfileError('');
+    try {
+      const { data } = await api.get('/profile');
+      setProfile(data.data);
+    } catch {
+      setProfile(null);
+      setProfileError('Clinic services could not be loaded. Please try again.');
+    }
+  };
 
   useEffect(() => {
-    api.get('/profile').then(({ data }) => setProfile(data.data)).catch(() => {});
+    loadProfile();
+    // Warm the Render backend immediately (cold start) instead of waiting for
+    // per-section fetches — one cheap call keeps the dyno awake while the
+    // visitor reads the hero, so booking/slots resolve fast when reached.
+    api.get('/health').catch(() => {});
     // Real Case Vault from the API; fall back to demo showcase if empty/unavailable
     api.get('/profile/case-vault')
       .then(({ data }) => {
@@ -88,6 +106,16 @@ export default function HomePage() {
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!profile?._id) return;
+    api.get('/reviews/testimonials', { params: { limit: 20 } })
+      .then(({ data }) => setTestimonials(data.data || []))
+      .catch(() => setTestimonials([]));
+    api.get(`/reviews/doctor/${profile._id}`, { params: { limit: 20 } })
+      .then(({ data }) => setReviews(data.data || []))
+      .catch(() => setReviews([]));
+  }, [profile?._id]);
 
   const stats = profile
     ? [
@@ -134,10 +162,10 @@ export default function HomePage() {
       <TreatmentPlans profile={profile} />
       <TimelineSection />
       <BeforeAfterSlider cases={cases} />
-      <TestimonialsCarousel />
+      <TestimonialsCarousel testimonials={testimonials} />
       <SymptomChecker />
-      <BookingWidget />
-      <ReelsSection profile={profile} />
+      <BookingWidget profile={profile} profileError={profileError} onRetryProfile={loadProfile} />
+      <ReelsSection profile={profile} testimonials={testimonials} reviews={reviews} />
 
       <footer className="border-t border-[#E8D7D1] bg-[#FBF9F8] py-10 text-center text-[#6E6D7A] text-sm">
         <p>© {new Date().getFullYear()} Dr. Shivalika Saraswat. All rights reserved.</p>
